@@ -184,7 +184,7 @@ class Transformer(nn.Module):
         tgt = self.pe(self.embedding(tgt))
 
         dec, _ = self.decoder(tgt, self.encoder(src))
-        out = self.embedding(dec)
+        out = F.softmax(self.embedding(dec), dim=-1)
 
         return out
 

@@ -5,8 +5,8 @@ from src.transformer import *
 d_key = 4
 nheads = 2
 model_dim = d_key*nheads
-batch_size = 24
-sent_len = 16
+batch_size = 4
+sent_len = 4
 hidden_dim = 16
 vocab_size = 14
 
@@ -16,7 +16,7 @@ depth = 2
 torch.manual_seed(1234)
 
 
-class TestMultiHeadAttention(unittest.TestCase):
+class TestTensorShapes(unittest.TestCase):
 
     def test_attention(self):
         mhatt = MultiHeadAttention(nheads*d_key, nheads, masked=True)
@@ -33,7 +33,7 @@ class TestMultiHeadAttention(unittest.TestCase):
             (batch_size, sent_len, nheads, d_key), ret.shape
         )
 
-    def test_mhattention(self):
+    def test_multi_head_attention(self):
         mhatt = MultiHeadAttention(model_dim, nheads, masked=True)
 
         A = torch.ones((batch_size, sent_len, model_dim))
@@ -42,6 +42,54 @@ class TestMultiHeadAttention(unittest.TestCase):
         ret = mhatt(A, B, B)
 
         self.assertEqual((batch_size, sent_len, model_dim), ret.shape)
+
+    def test_transformer(self):
+        model = Transformer(
+            vocab_size,
+            model_dim,
+            hidden_dim,
+            nheads,
+            max_len,
+            depth
+        )
+
+        x = torch.ones(
+            (batch_size, sent_len, vocab_size), requires_grad=False
+        )
+        y = torch.ones(
+            (batch_size, sent_len//2, vocab_size), requires_grad=False
+        )
+
+        ret = model(x, y)
+
+        self.assertEqual(
+            (batch_size, sent_len//2, vocab_size), ret.shape
+        )
+
+    def test_pe(self):
+        A = torch.ones((batch_size, sent_len, model_dim))
+        pe = PositionalEncoder(model_dim, max_len)
+
+        ret = pe(A)
+
+        self.assertEqual((batch_size, sent_len, model_dim), ret.shape)
+
+    def test_encoder_layer(self):
+        A = torch.ones((batch_size, sent_len, model_dim))
+        encoder = EncoderLayer(model_dim, hidden_dim, nheads)
+
+        enc = encoder(A)
+
+        self.assertEqual((batch_size, sent_len, model_dim), enc.shape)
+
+    def test_decoder_layer(self):
+        A = torch.ones((batch_size, sent_len, model_dim))
+        B = torch.ones((batch_size, sent_len//2, model_dim))
+        decoder = DecoderLayer(model_dim, hidden_dim, nheads)
+
+        dec, _ = decoder(A, B)
+
+        self.assertEqual((batch_size, sent_len, model_dim), dec.shape)
 
 
 class TestEmbedding(unittest.TestCase):
@@ -57,10 +105,10 @@ class TestEmbedding(unittest.TestCase):
 
         self.target_a = torch.ones(
             (batch_size, sent_len, model_dim)
-        ) * 10
+        )
         self.target_b = torch.ones(
             (batch_size, sent_len, vocab_size)
-        ) * 10
+        )
 
         self.optimizer = torch.optim.SGD(
             self.model.parameters(), lr=0.01, momentum=0.9
@@ -114,41 +162,11 @@ class TestEmbedding(unittest.TestCase):
         self.assertEqual(self.decoder_shape, output_b.shape)
 
 
-class TestPositionalEncoder(unittest.TestCase):
+class TestSanityChecks(unittest.TestCase):
 
-    def test_pe(self):
-        A = torch.ones((batch_size, sent_len, model_dim))
-        pe = PositionalEncoder(model_dim, max_len)
+    def test_init_loss(self):
+        """Compares loss@init with theoretical loss."""
 
-        ret = pe(A)
-
-
-class TestEncoderLayer(unittest.TestCase):
-
-    def test_encoder(self):
-        A = torch.ones((batch_size, sent_len, model_dim))
-        encoder = EncoderLayer(model_dim, hidden_dim, nheads)
-
-        enc = encoder(A)
-
-        self.assertEqual((batch_size, sent_len, model_dim), enc.shape)
-
-
-class TestDecoderLayer(unittest.TestCase):
-
-    def test_decoder(self):
-        A = torch.ones((batch_size, sent_len, model_dim))
-        B = torch.ones((batch_size, sent_len//2, model_dim))
-        decoder = DecoderLayer(model_dim, hidden_dim, nheads)
-
-        dec, _ = decoder(A, B)
-
-        self.assertEqual((batch_size, sent_len, model_dim), dec.shape)
-
-
-class TestTransformer(unittest.TestCase):
-
-    def test_transformer(self):
         model = Transformer(
             vocab_size,
             model_dim,
@@ -158,20 +176,30 @@ class TestTransformer(unittest.TestCase):
             depth
         )
 
-        x = torch.ones(
+        inputs = torch.ones(
             (batch_size, sent_len, vocab_size), requires_grad=False
         )
-        y = torch.ones(
-            (batch_size, sent_len//2, vocab_size), requires_grad=False
+
+        targets = torch.ones(
+            (batch_size, sent_len, vocab_size), requires_grad=False
         )
 
-        ret = model(x, y)
+        outputs = model(inputs, targets)
 
-        self.assertEqual(
-            (batch_size, sent_len//2, vocab_size), ret.shape
+        loss_fn = nn.CrossEntropyLoss()
+        loss = loss_fn(
+            outputs.reshape(-1, vocab_size),
+            torch.argmax(targets.reshape(-1, vocab_size), dim=-1)
         )
+
+        self.assertAlmostEqual(-np.log(1./vocab_size), loss.detach().numpy(), delta=0.2)
+
+
+class TestGradientFlows(unittest.TestCase):
 
     def test_one_step_grad(self):
+        """Tests whether all parameters are updated."""
+
         model = Transformer(
             vocab_size,
             model_dim,
@@ -184,7 +212,7 @@ class TestTransformer(unittest.TestCase):
         x = torch.ones(
             (batch_size, sent_len, vocab_size), requires_grad=False
         )
-        y = torch.ones(
+        y = torch.zeros(
             (batch_size, sent_len // 2, vocab_size), requires_grad=False
         )
 
@@ -196,16 +224,20 @@ class TestTransformer(unittest.TestCase):
         for i in range(10):
             optimizer.zero_grad()
             y_hat = model(x, y)
+
             loss = torch.sum(y_hat)
 
             loss.backward()
             optimizer.step()
 
-        for p0, p in zip(model_t0.parameters(), model.parameters()):
-            self.assertNotEqual(torch.sum(p0), torch.sum(p))
+        for p0, p in zip(
+                model_t0.named_parameters(),
+                model.named_parameters()
+        ):
+            self.assertNotEqual(torch.sum(p0[1]), torch.sum(p[1]))
 
-    def test_dependencies_batch_dim(self):
-        """Checks consistency of batch dimension."""
+    def test_batch_dim(self):
+        """Tests consistency of batch dimension."""
 
         model = Transformer(
             vocab_size,
@@ -236,15 +268,15 @@ class TestTransformer(unittest.TestCase):
             )
             self.assertEqual(
                 0.0,
-                grad[i+1:, :, :].sum()
+                grad[i + 1:, :, :].sum()
             )
             self.assertNotEqual(
                 0.0,
                 grad[i, :, :].sum()
             )
 
-    def test_dependencies_decoder_view(self):
-        """Checks masking of outputs in decoder."""
+    def test_mask(self):
+        """Tests masking of decoder inputs."""
 
         model = Transformer(
             vocab_size,
@@ -277,33 +309,7 @@ class TestTransformer(unittest.TestCase):
                 0.0,
                 grad[:, i, :].sum()
             )
-
-    def test_init_loss(self):
-        """Compares loss@init with theoretical loss."""
-
-        model = Transformer(
-            vocab_size,
-            model_dim,
-            hidden_dim,
-            nheads,
-            max_len,
-            depth
-        )
-
-        inputs = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=False
-        )
-
-        targets = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=False
-        )
-
-        outputs = model(inputs, targets)
-
-        loss_fn = nn.CrossEntropyLoss()
-        loss = loss_fn(
-            outputs.reshape(-1, vocab_size),
-            torch.argmax(targets.reshape(-1, vocab_size), dim=-1)
-        )
-
-        self.assertAlmostEqual(-np.log(1./vocab_size), loss.detach().numpy(), delta=0.1)
+            self.assertNotEqual(
+                0.0,
+                grad[:, :i + 1, :].sum()
+            )
