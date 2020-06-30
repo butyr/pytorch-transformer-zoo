@@ -69,7 +69,7 @@ class TestEmbedding(unittest.TestCase):
         self.weights_in = deepcopy(self.model.encoder.weight)
         self.weights_out = deepcopy(self.model.decoder.weight)
 
-    def test_encoder(self):
+    def test_encoder_tie_weights(self):
         self.optimizer.zero_grad()
         output_a = self.model(self.input_a)
         loss = torch.sum(output_a-self.target_a)
@@ -91,7 +91,7 @@ class TestEmbedding(unittest.TestCase):
         )
         self.assertEqual(self.encoder_shape, output_a.shape)
 
-    def test_decoder(self):
+    def test_decoder_tie_weights(self):
         self.optimizer.zero_grad()
         output_b = self.model(self.input_b)
         loss = torch.sum(output_b - self.target_b)
@@ -306,4 +306,4 @@ class TestTransformer(unittest.TestCase):
             torch.argmax(targets.reshape(-1, vocab_size), dim=-1)
         )
 
-        self.assertEqual(-np.log(1./vocab_size), loss)
+        self.assertAlmostEqual(-np.log(1./vocab_size), loss.detach().numpy(), delta=0.1)
