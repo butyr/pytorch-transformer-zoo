@@ -79,10 +79,10 @@ class Embedding(nn.Module):
         self.vocab_size = vocab_size
         self.model_dim = model_dim
 
-        self.encoder = nn.Embedding(vocab_size, model_dim)
+        self.encoder = nn.Linear(vocab_size, model_dim, bias=False)
         self.decoder = nn.Linear(model_dim, vocab_size, bias=False)
 
-        self.decoder.weight = self.encoder.weight
+        self.decoder.weight = nn.Parameter(self.encoder.weight.t())
 
     def forward(self, x):
         if x.shape[-1] == self.model_dim:
