@@ -1,12 +1,13 @@
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
 from torch.autograd import Variable
 import numpy as np
 from copy import deepcopy
 from collections import OrderedDict
 
 
-class MultiSequential(torch.nn.Sequential):
+class MultiSequential(nn.Sequential):
     """Sequential model with multiple inputs."""
 
     def forward(self, *inputs):
@@ -21,10 +22,14 @@ class MultiSequential(torch.nn.Sequential):
 def seq_clones(module, depth):
     """Produce N identical layers."""
 
-    return MultiSequential(OrderedDict([('layer{}'.format(i), deepcopy(module)) for i in range(depth)]))
+    return MultiSequential(
+        OrderedDict(
+            [('layer{}'.format(i), deepcopy(module)) for i in range(depth)]
+        )
+    )
 
 
-class MultiHeadAttention(torch.nn.Module):
+class MultiHeadAttention(nn.Module):
 
     def __init__(self, model_dim, nheads, masked=False):
         super().__init__()
@@ -33,18 +38,18 @@ class MultiHeadAttention(torch.nn.Module):
         self.nheads = nheads
         self.model_dim = model_dim
 
-        self.linear_q = torch.nn.Linear(model_dim, model_dim)
-        self.linear_k = torch.nn.Linear(model_dim, model_dim)
-        self.linear_v = torch.nn.Linear(model_dim, model_dim)
-        self.linear_out = torch.nn.Linear(model_dim, model_dim)
+        self.linear_q = nn.Linear(model_dim, model_dim)
+        self.linear_k = nn.Linear(model_dim, model_dim)
+        self.linear_v = nn.Linear(model_dim, model_dim)
+        self.linear_out = nn.Linear(model_dim, model_dim)
 
     def forward(self, query, key, value):
         assert self.model_dim % self.nheads == 0
 
         key_dim = self.model_dim//self.nheads
         shape_q = query.shape[:2]+(self.nheads, key_dim)
-        shape_k = key.shape[:2] + (self.nheads, key_dim)
-        shape_v = value.shape[:2] + (self.nheads, key_dim)
+        shape_k = key.shape[:2]+(self.nheads, key_dim)
+        shape_v = value.shape[:2]+(self.nheads, key_dim)
 
         ret, att, = self.attention(self.linear_q(query).reshape(shape_q),
                                    self.linear_k(key).reshape(shape_k),
@@ -56,7 +61,8 @@ class MultiHeadAttention(torch.nn.Module):
     def attention(self, query, key, value):
         score = torch.einsum('bqhd,bkhd->bhqk', query, key)
         if self.masked:
-            mask = torch.triu(torch.ones(score.shape, dtype=torch.bool), diagonal=1)
+            mask = torch.triu(torch.ones(score.shape, dtype=torch.bool),
+                              diagonal=1)
             score[mask] = -float('inf')
 
         att = F.softmax(score / np.sqrt(score.shape[-1]), dim=-1)
@@ -65,7 +71,7 @@ class MultiHeadAttention(torch.nn.Module):
         return ret, att
 
 
-class Embedding(torch.nn.Module):
+class Embedding(nn.Module):
 
     def __init__(self, vocab_size, model_dim):
         super().__init__()
@@ -73,8 +79,8 @@ class Embedding(torch.nn.Module):
         self.vocab_size = vocab_size
         self.model_dim = model_dim
 
-        self.encoder = torch.nn.Embedding(vocab_size, model_dim)
-        self.decoder = torch.nn.Linear(model_dim, vocab_size, bias=False)
+        self.encoder = nn.Embedding(vocab_size, model_dim)
+        self.decoder = nn.Linear(model_dim, vocab_size, bias=False)
 
         self.decoder.weight = self.encoder.weight
 
@@ -85,7 +91,7 @@ class Embedding(torch.nn.Module):
         return self.encoder(x) * np.sqrt(self.model_dim)
 
 
-class PositionalEncoder(torch.nn.Module):
+class PositionalEncoder(nn.Module):
     """Implement the PE function."""
     "Based on https://nlp.seas.harvard.edu/2018/04/03/attention.html"
 
@@ -108,15 +114,15 @@ class PositionalEncoder(torch.nn.Module):
         return x
 
 
-class EncoderLayer(torch.nn.Module):
+class EncoderLayer(nn.Module):
 
     def __init__(self, model_dim, hidden_dim, nheads):
         super().__init__()
         self.mhatt = MultiHeadAttention(model_dim, nheads)
-        self.linear = torch.nn.Sequential(
-            torch.nn.Linear(model_dim, hidden_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_dim, model_dim)
+        self.linear = nn.Sequential(
+            nn.Linear(model_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, model_dim)
         )
 
     def forward(self, src):
@@ -126,17 +132,19 @@ class EncoderLayer(torch.nn.Module):
         return src
 
 
-class DecoderLayer(torch.nn.Module):
+class DecoderLayer(nn.Module):
 
     def __init__(self, model_dim, hidden_dim, nheads):
         super().__init__()
-        self.mhatt_masked = MultiHeadAttention(model_dim, nheads, masked=True)
+        self.mhatt_masked = MultiHeadAttention(
+            model_dim, nheads, masked=True
+        )
         self.mhatt = MultiHeadAttention(model_dim, nheads)
 
-        self.linear = torch.nn.Sequential(
-            torch.nn.Linear(model_dim, hidden_dim),
-            torch.nn.ReLU(),
-            torch.nn.Linear(hidden_dim, model_dim)
+        self.linear = nn.Sequential(
+            nn.Linear(model_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, model_dim)
         )
 
     def forward(self, tgt, enc):
@@ -144,24 +152,48 @@ class DecoderLayer(torch.nn.Module):
         tgt = self.mhatt(tgt, enc, enc)+tgt
         tgt = self.linear(tgt)+tgt
 
-        return tgt
+        return tgt, enc
 
 
-class Transformer(torch.nn.Module):
+class Transformer(nn.Module):
 
-    def __init__(self, vocab_size, model_dim, hidden_dim, nheads, max_len=5000, depth=1):
+    def __init__(
+            self,
+            vocab_size,
+            model_dim,
+            hidden_dim,
+            nheads,
+            max_len=5000,
+            depth=5
+    ):
         super().__init__()
         self.embedding = Embedding(vocab_size, model_dim)
         self.pe = PositionalEncoder(model_dim, max_len)
 
-        self.encoder = seq_clones(EncoderLayer(model_dim, hidden_dim, nheads), depth)
-        self.decoder = seq_clones(DecoderLayer(model_dim, hidden_dim, nheads), depth)
+        self.encoder = seq_clones(
+            EncoderLayer(model_dim, hidden_dim, nheads), depth
+        )
+        self.decoder = seq_clones(
+            DecoderLayer(model_dim, hidden_dim, nheads), depth
+        )
+
+        self.apply(self._init_weights)
 
     def forward(self, src, tgt):
         src = self.pe(self.embedding(src))
         tgt = self.pe(self.embedding(tgt))
 
-        dec = self.decoder(tgt, self.encoder(src))
-        logits = self.embedding(dec)
+        dec, _ = self.decoder(tgt, self.encoder(src))
+        out = self.embedding(dec)
 
-        return logits
+        return out
+
+    @staticmethod
+    def _init_weights(module):
+        if isinstance(module, nn.Linear):
+            nn.init.xavier_uniform_(module.weight)
+            if module.bias is not None:
+                module.bias.data.fill_(0.01)
+
+        elif isinstance(module, nn.Embedding):
+            nn.init.xavier_uniform_(module.weight)
