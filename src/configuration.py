@@ -6,7 +6,7 @@ class Config:
             nheads=8,
             key_dim=64,
             model_dim=512,
-            hidden_size=128,
+            hidden_dim=128,
             depth=5,
             max_len=5000,
             batch_size=64,
@@ -17,7 +17,7 @@ class Config:
         self.nheads = nheads
         self.key_dim = key_dim
         self.model_dim = model_dim
-        self.hidden_size = hidden_size
+        self.hidden_dim = hidden_dim
         self.depth = depth
         self.max_len = max_len
         self.batch_size = batch_size

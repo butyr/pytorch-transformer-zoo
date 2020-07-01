@@ -316,17 +316,9 @@ class TestGradientFlows(unittest.TestCase):
                 loss, model.tgt_embedding, retain_graph=True
             )[0]
 
-            self.assertNotEqual(0.0, loss)
-
-            self.assertNotEqual(0.0, grad.sum())
-
             self.assertEqual(
                 0.0,
                 grad[:, i+1:, :].sum()
-            )
-            self.assertNotEqual(
-                0.0,
-                grad[:, i, :].sum()
             )
             self.assertNotEqual(
                 0.0,
