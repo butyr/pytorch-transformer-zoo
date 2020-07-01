@@ -8,7 +8,7 @@ from collections import OrderedDict
 
 
 class MultiSequential(nn.Sequential):
-    """Sequential model with multiple inputs."""
+    """Sequential model with as many inputs as outputs."""
 
     def forward(self, *inputs):
         for module in self._modules.values():
@@ -19,12 +19,13 @@ class MultiSequential(nn.Sequential):
         return inputs
 
 
-def seq_clones(module, depth):
-    """Produce N identical layers."""
+def seq_clones(module, n):
+    """Produce n identical layers."""
 
     return MultiSequential(
         OrderedDict(
-            [('layer{}'.format(i), deepcopy(module)) for i in range(depth)]
+            [('layer{}'.format(i), deepcopy(module))
+             for i in range(n)]
         )
     )
 
@@ -51,9 +52,11 @@ class MultiHeadAttention(nn.Module):
         shape_k = key.shape[:2]+(self.nheads, key_dim)
         shape_v = value.shape[:2]+(self.nheads, key_dim)
 
-        ret, att, = self.attention(self.linear_q(query).reshape(shape_q),
-                                   self.linear_k(key).reshape(shape_k),
-                                   self.linear_v(value).reshape(shape_v))
+        ret, att, = self.attention(
+            self.linear_q(query).reshape(shape_q),
+            self.linear_k(key).reshape(shape_k),
+            self.linear_v(value).reshape(shape_v)
+        )
         ret = ret.reshape(ret.shape[:2] + (self.model_dim,))
 
         return self.linear_out(ret)
@@ -61,8 +64,9 @@ class MultiHeadAttention(nn.Module):
     def attention(self, query, key, value):
         score = torch.einsum('bqhd,bkhd->bhqk', query, key)
         if self.masked:
-            mask = torch.triu(torch.ones(score.shape, dtype=torch.bool),
-                              diagonal=1)
+            mask = torch.triu(
+                torch.ones(score.shape, dtype=torch.bool), diagonal=1
+            )
             score[mask] = -float('inf')
 
         att = F.softmax(score / np.sqrt(score.shape[-1]), dim=-1)
@@ -119,17 +123,17 @@ class EncoderLayer(nn.Module):
     def __init__(self, model_dim, hidden_dim, nheads):
         super().__init__()
         self.mhatt = MultiHeadAttention(model_dim, nheads)
-        self.linear = nn.Sequential(
+        self.ffn = nn.Sequential(
             nn.Linear(model_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, model_dim)
         )
 
     def forward(self, src):
-        src = self.mhatt(src, src, src)+src
-        src = self.linear(src)+src
+        src_att = self.mhatt(src, src, src)+src
+        src_out = self.ffn(src_att)+src_att
 
-        return src
+        return src_out
 
 
 class DecoderLayer(nn.Module):
@@ -141,18 +145,18 @@ class DecoderLayer(nn.Module):
         )
         self.mhatt = MultiHeadAttention(model_dim, nheads)
 
-        self.linear = nn.Sequential(
+        self.ffn = nn.Sequential(
             nn.Linear(model_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, model_dim)
         )
 
     def forward(self, tgt, enc):
-        tgt = self.mhatt_masked(tgt, tgt, tgt)+tgt
-        tgt = self.mhatt(tgt, enc, enc)+tgt
-        tgt = self.linear(tgt)+tgt
+        tgt_att1 = self.mhatt_masked(tgt, tgt, tgt)+tgt
+        tgt_att2 = self.mhatt(tgt_att1, enc, enc)+tgt_att1
+        tgt_out = self.ffn(tgt_att2)+tgt_att2
 
-        return tgt, enc
+        return tgt_out, enc
 
 
 class Transformer(nn.Module):
@@ -190,9 +194,8 @@ class Transformer(nn.Module):
         tgt_pe = self.pe(self.tgt_embedding)
 
         dec, _ = self.decoder(tgt_pe, self.encoder(src_pe))
-        out = F.softmax(self.embedding(dec, inverse=True), dim=-1)
 
-        return out
+        return self.embedding(dec, inverse=True)
 
     @staticmethod
     def _init_weights(module):
