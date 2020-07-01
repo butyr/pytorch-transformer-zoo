@@ -37,7 +37,7 @@ class TestTensorShapes(unittest.TestCase):
         mhatt = MultiHeadAttention(model_dim, nheads, masked=True)
 
         A = torch.ones((batch_size, sent_len, model_dim))
-        B = torch.ones((batch_size, int(sent_len / 2), model_dim))
+        B = torch.ones((batch_size, sent_len // 2, model_dim))
 
         ret = mhatt(A, B, B)
 
@@ -54,10 +54,10 @@ class TestTensorShapes(unittest.TestCase):
         )
 
         x = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=False
+            (batch_size, sent_len), dtype=torch.long
         )
         y = torch.ones(
-            (batch_size, sent_len//2, vocab_size), requires_grad=False
+            (batch_size, sent_len//2), dtype=torch.long
         )
 
         ret = model(x, y)
@@ -100,7 +100,7 @@ class TestEmbedding(unittest.TestCase):
 
         self.model = Embedding(vocab_size, model_dim)
 
-        self.input_a = torch.ones((batch_size, sent_len, vocab_size))
+        self.input_a = torch.ones((batch_size, sent_len), dtype=torch.long)
         self.input_b = torch.ones((batch_size, sent_len, model_dim))
 
         self.target_a = torch.ones(
@@ -141,7 +141,7 @@ class TestEmbedding(unittest.TestCase):
 
     def test_decoder_tie_weights(self):
         self.optimizer.zero_grad()
-        output_b = self.model(self.input_b)
+        output_b = self.model(self.input_b, inverse=True)
         loss = torch.sum(output_b - self.target_b)
 
         loss.backward()
@@ -177,11 +177,11 @@ class TestSanityChecks(unittest.TestCase):
         )
 
         inputs = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=False
+            (batch_size, sent_len), dtype=torch.long
         )
 
         targets = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=False
+            (batch_size, sent_len), dtype=torch.long
         )
 
         outputs = model(inputs, targets)
@@ -189,10 +189,41 @@ class TestSanityChecks(unittest.TestCase):
         loss_fn = nn.CrossEntropyLoss()
         loss = loss_fn(
             outputs.reshape(-1, vocab_size),
-            torch.argmax(targets.reshape(-1, vocab_size), dim=-1)
+            targets.reshape(-1)
         )
 
-        self.assertAlmostEqual(-np.log(1./vocab_size), loss.detach().numpy(), delta=0.2)
+        self.assertAlmostEqual(
+            -np.log(1./vocab_size), loss.detach().numpy(), delta=0.2
+        )
+
+    def test_softmax_dim(self):
+
+        model = Transformer(
+            vocab_size,
+            model_dim,
+            hidden_dim,
+            nheads,
+            max_len,
+            depth
+        )
+
+        inputs = torch.ones(
+            (batch_size, sent_len), dtype=torch.long
+        )
+
+        targets = torch.ones(
+            (batch_size, sent_len), dtype=torch.long
+        )
+
+        outputs = model(inputs, targets)
+
+        for i in range(batch_size):
+            for j in range(sent_len):
+                self.assertAlmostEqual(
+                    1.0,
+                    outputs[i, j, :].sum().detach().numpy(),
+                    places=6
+                )
 
 
 class TestGradientFlows(unittest.TestCase):
@@ -209,11 +240,11 @@ class TestGradientFlows(unittest.TestCase):
             depth
         )
 
-        x = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=False
+        inputs = torch.ones(
+            (batch_size, sent_len), dtype=torch.long
         )
-        y = torch.zeros(
-            (batch_size, sent_len // 2, vocab_size), requires_grad=False
+        targets = torch.zeros(
+            (batch_size, sent_len // 2), dtype=torch.long
         )
 
         optimizer = torch.optim.SGD(
@@ -221,20 +252,30 @@ class TestGradientFlows(unittest.TestCase):
         )
         model_t0 = deepcopy(model)
 
-        for i in range(10):
-            optimizer.zero_grad()
-            y_hat = model(x, y)
+        optimizer.zero_grad()
+        outputs = model(inputs, targets)
+        targets = torch.argmax(
+            (outputs*(-1)).reshape(-1, vocab_size), dim=-1
+        )
 
-            loss = torch.sum(y_hat)
+        loss_fn = nn.CrossEntropyLoss()
+        loss = loss_fn(
+            outputs.reshape(-1, vocab_size),
+            targets
+        )
 
-            loss.backward()
-            optimizer.step()
+        loss.backward()
+        optimizer.step()
 
         for p0, p in zip(
                 model_t0.named_parameters(),
                 model.named_parameters()
         ):
-            self.assertNotEqual(torch.sum(p0[1]), torch.sum(p[1]))
+            self.assertNotEqual(
+                0.0,
+                torch.sum(torch.square(p[1]-p0[1]))
+            )
+
 
     def test_batch_dim(self):
         """Tests consistency of batch dimension."""
@@ -249,18 +290,20 @@ class TestGradientFlows(unittest.TestCase):
         )
 
         inputs = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=True
+            (batch_size, sent_len), dtype=torch.long
         )
 
         targets = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=False
+            (batch_size, sent_len), dtype=torch.long
         )
 
         for i in range(batch_size):
             outputs = model(inputs, targets)
 
             loss = outputs[i, :, :].sum()
-            grad = torch.autograd.grad(loss, inputs)[0]
+            grad = torch.autograd.grad(loss, model.src_embedding)[0]
+
+            self.assertNotEqual(0.0, loss)
 
             self.assertEqual(
                 0.0,
@@ -268,7 +311,7 @@ class TestGradientFlows(unittest.TestCase):
             )
             self.assertEqual(
                 0.0,
-                grad[i + 1:, :, :].sum()
+                grad[i+1:, :, :].sum()
             )
             self.assertNotEqual(
                 0.0,
@@ -288,22 +331,25 @@ class TestGradientFlows(unittest.TestCase):
         )
 
         inputs = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=False
+            (batch_size, sent_len), dtype=torch.long
         )
 
         targets = torch.ones(
-            (batch_size, sent_len, vocab_size), requires_grad=True
+            (batch_size, sent_len), dtype=torch.long
         )
 
         for i in range(sent_len):
             outputs = model(inputs, targets)
 
             loss = outputs[:, i, :].sum()
-            grad = torch.autograd.grad(loss, targets)[0]
+            grad = torch.autograd.grad(loss, model.tgt_embedding)[0]
+
+            self.assertNotEqual(0.0, loss)
+            self.assertNotEqual(0.0, grad.sum())
 
             self.assertEqual(
                 0.0,
-                grad[:, i + 1:, :].sum()
+                grad[:, i+1:, :].sum()
             )
             self.assertNotEqual(
                 0.0,
@@ -311,5 +357,5 @@ class TestGradientFlows(unittest.TestCase):
             )
             self.assertNotEqual(
                 0.0,
-                grad[:, :i + 1, :].sum()
+                grad[:, :i+1, :].sum()
             )

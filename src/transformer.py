@@ -79,13 +79,13 @@ class Embedding(nn.Module):
         self.vocab_size = vocab_size
         self.model_dim = model_dim
 
-        self.encoder = nn.Linear(vocab_size, model_dim, bias=False)
+        self.encoder = nn.Embedding(vocab_size, model_dim)
         self.decoder = nn.Linear(model_dim, vocab_size, bias=False)
 
-        self.encoder.weight = nn.Parameter(self.decoder.weight.t())
+        self.decoder.weight = self.encoder.weight
 
-    def forward(self, x):
-        if x.shape[-1] == self.model_dim:
+    def forward(self, x, inverse=False):
+        if inverse:
             return self.decoder(x)
 
         return self.encoder(x) * np.sqrt(self.model_dim)
@@ -179,12 +179,18 @@ class Transformer(nn.Module):
 
         self.apply(self._init_weights)
 
-    def forward(self, src, tgt):
-        src = self.pe(self.embedding(src))
-        tgt = self.pe(self.embedding(tgt))
+        self.src_embedding = None
+        self.tgt_embedding = None
 
-        dec, _ = self.decoder(tgt, self.encoder(src))
-        out = F.softmax(self.embedding(dec), dim=-1)
+    def forward(self, src, tgt):
+        self.src_embedding = self.embedding(src)
+        self.tgt_embedding = self.embedding(tgt)
+
+        src_pe = self.pe(self.src_embedding)
+        tgt_pe = self.pe(self.tgt_embedding)
+
+        dec, _ = self.decoder(tgt_pe, self.encoder(src_pe))
+        out = F.softmax(self.embedding(dec, inverse=True), dim=-1)
 
         return out
 
@@ -193,7 +199,7 @@ class Transformer(nn.Module):
         if isinstance(module, nn.Linear):
             nn.init.xavier_uniform_(module.weight)
             if module.bias is not None:
-                module.bias.data.fill_(0.01)
+                module.bias.data.fill_(0.1)
 
         elif isinstance(module, nn.Embedding):
             nn.init.xavier_uniform_(module.weight)
