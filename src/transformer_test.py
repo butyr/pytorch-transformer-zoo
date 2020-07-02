@@ -1,3 +1,5 @@
+"""Test transformer model."""
+
 import unittest
 from src.transformer import *
 
@@ -23,10 +25,10 @@ class TestTensorShapes(unittest.TestCase):
         A = torch.ones((batch_size, sent_len, nheads, d_key))
         B = torch.ones((batch_size, int(sent_len/2), nheads, d_key))
 
-        ret, att = mhatt.attention(A, B, B)
+        ret = mhatt.attention(A, B, B)
 
         self.assertEqual(
-            (batch_size, nheads, sent_len, int(sent_len/2)), att.shape
+            (batch_size, nheads, sent_len, int(sent_len/2)), mhatt.att.shape
         )
         self.assertEqual(
             (batch_size, sent_len, nheads, d_key), ret.shape
@@ -113,8 +115,8 @@ class TestEmbedding(unittest.TestCase):
             self.model.parameters(), lr=0.01, momentum=0.9
         )
 
-        self.weights_in = deepcopy(self.model.encoder.weight)
-        self.weights_out = deepcopy(self.model.decoder.weight)
+        self.weights_in = copy.deepcopy(self.model.encoder.weight)
+        self.weights_out = copy.deepcopy(self.model.decoder.weight)
 
     def test_encoder_tie_weights(self):
         self.optimizer.zero_grad()
@@ -219,7 +221,7 @@ class TestGradientFlows(unittest.TestCase):
         optimizer = torch.optim.SGD(
             model.parameters(), lr=100.0, momentum=0.9
         )
-        model_t0 = deepcopy(model)
+        model_t0 = copy.deepcopy(model)
 
         optimizer.zero_grad()
         outputs = model(inputs, targets)

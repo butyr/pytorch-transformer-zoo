@@ -1,10 +1,17 @@
+"""Implement transformer model as presented in https://arxiv.org/abs/1706.03762.
+
+TODO:
+    - add dropout
+    - add layer norms
+"""
+
+import copy
+from collections import OrderedDict
+from torch.autograd import Variable
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
-from torch.autograd import Variable
 import numpy as np
-from copy import deepcopy
-from collections import OrderedDict
 
 
 class MultiSequential(nn.Sequential):
@@ -19,18 +26,25 @@ class MultiSequential(nn.Sequential):
         return inputs
 
 
-def seq_clones(module, n):
-    """Produce n identical layers."""
+def seq_clones(module, seq_len):
+    """Produce sequential model with seq_len identical layers."""
 
     return MultiSequential(
         OrderedDict(
-            [('layer{}'.format(i), deepcopy(module))
-             for i in range(n)]
+            [('layer{}'.format(i), copy.deepcopy(module))
+             for i in range(seq_len)]
         )
     )
 
 
 class MultiHeadAttention(nn.Module):
+    """Implement multi-head attention module.
+
+    Args:
+        model_dim: dimension of embedding.
+        nheads: number of attention heads.
+        masked: sets whether an input mask should be used.
+    """
 
     def __init__(self, model_dim, nheads, masked=False):
         super().__init__()
@@ -44,7 +58,20 @@ class MultiHeadAttention(nn.Module):
         self.linear_v = nn.Linear(model_dim, model_dim)
         self.linear_out = nn.Linear(model_dim, model_dim)
 
+        self.att = None
+
     def forward(self, query, key, value):
+        """Compute multi-head attention forward pass.
+
+        Args:
+            query: tensor with shape (batch_size, sentence_len1, model_dim).
+            key: tensor with shape (batch_size, sentence_len2, model_dim).
+            value: tensor with shape (batch_size, sentence_len2, model_dim).
+
+        Returns:
+            tensor with shape (batch_size, sentence_len1, model_dim).
+        """
+
         assert self.model_dim % self.nheads == 0
 
         key_dim = self.model_dim//self.nheads
@@ -52,7 +79,7 @@ class MultiHeadAttention(nn.Module):
         shape_k = key.shape[:2]+(self.nheads, key_dim)
         shape_v = value.shape[:2]+(self.nheads, key_dim)
 
-        ret, att, = self.attention(
+        ret = self.attention(
             self.linear_q(query).reshape(shape_q),
             self.linear_k(key).reshape(shape_k),
             self.linear_v(value).reshape(shape_v)
@@ -62,6 +89,17 @@ class MultiHeadAttention(nn.Module):
         return self.linear_out(ret)
 
     def attention(self, query, key, value):
+        """Compute scaled dot-product attention.
+
+        Args:
+            query: tensor with shape (batch_size, sentence_len1, nheads, key_dim).
+            key: tensor with shape (batch_size, sentence_len2, nheads, key_dim).
+            value: tensor with shape (batch_size, sentence_len2, nheads, key_dim).
+
+        Returns:
+            tensor with shape (batch_size, sentence_len1, nheads, key_dim).
+        """
+
         score = torch.einsum('bqhd,bkhd->bhqk', query, key)
         if self.masked:
             mask = torch.triu(
@@ -69,13 +107,14 @@ class MultiHeadAttention(nn.Module):
             )
             score[mask] = -float('inf')
 
-        att = F.softmax(score / np.sqrt(score.shape[-1]), dim=-1)
-        ret = torch.einsum('bhqk,bkhd->bqhd', att, value)
+        self.att = F.softmax(score / np.sqrt(score.shape[-1]), dim=-1)
+        ret = torch.einsum('bhqk,bkhd->bqhd', self.att, value)
 
-        return ret, att
+        return ret
 
 
 class Embedding(nn.Module):
+    """Implement input and output embedding with tied weights."""
 
     def __init__(self, vocab_size, model_dim):
         super().__init__()
@@ -96,21 +135,23 @@ class Embedding(nn.Module):
 
 
 class PositionalEncoder(nn.Module):
-    """Implement the PE function."""
-    "Based on https://nlp.seas.harvard.edu/2018/04/03/attention.html"
+    """Implement the Positional Encoder function.
+
+    Based on https://nlp.seas.harvard.edu/2018/04/03/attention.html.
+    """
 
     def __init__(self, d_model, max_len=5000):
         super().__init__()
 
         # Compute the positional encodings once in log space.
-        pe = torch.zeros(max_len, d_model)
+        pos_enc = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2) *
                              -(np.log(10000.0) / d_model))
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0)
-        self.register_buffer('pe', pe)
+        pos_enc[:, 0::2] = torch.sin(position * div_term)
+        pos_enc[:, 1::2] = torch.cos(position * div_term)
+        pos_enc = pos_enc.unsqueeze(0)
+        self.register_buffer('pe', pos_enc)
 
     def forward(self, x):
         x = x + Variable(self.pe[:, :x.size(1)],
@@ -119,6 +160,7 @@ class PositionalEncoder(nn.Module):
 
 
 class EncoderLayer(nn.Module):
+    """Implement encoder sub-layers."""
 
     def __init__(self, model_dim, hidden_dim, nheads):
         super().__init__()
@@ -137,6 +179,7 @@ class EncoderLayer(nn.Module):
 
 
 class DecoderLayer(nn.Module):
+    """Implement decoder sub-layers."""
 
     def __init__(self, model_dim, hidden_dim, nheads):
         super().__init__()
@@ -160,6 +203,16 @@ class DecoderLayer(nn.Module):
 
 
 class Transformer(nn.Module):
+    """Implement transformer model.
+
+    Args:
+        vocab_size: number of unique tokens in vocabulary.
+        model_dim: dimension of embedding.
+        hidden_dim: size of hidden layer in feed forward sub-layers.
+        nheads: number of attention heads.
+        max_len: maximum sentence length used to pre-compute positional encoder.
+        depth: number of encoder and decoder sub-layers.
+    """
 
     def __init__(
             self,
@@ -172,7 +225,7 @@ class Transformer(nn.Module):
     ):
         super().__init__()
         self.embedding = Embedding(vocab_size, model_dim)
-        self.pe = PositionalEncoder(model_dim, max_len)
+        self.pos_enc = PositionalEncoder(model_dim, max_len)
 
         self.encoder = seq_clones(
             EncoderLayer(model_dim, hidden_dim, nheads), depth
@@ -190,8 +243,8 @@ class Transformer(nn.Module):
         self.src_embedding = self.embedding(src)
         self.tgt_embedding = self.embedding(tgt)
 
-        src_pe = self.pe(self.src_embedding)
-        tgt_pe = self.pe(self.tgt_embedding)
+        src_pe = self.pos_enc(self.src_embedding)
+        tgt_pe = self.pos_enc(self.tgt_embedding)
 
         dec, _ = self.decoder(tgt_pe, self.encoder(src_pe))
 
