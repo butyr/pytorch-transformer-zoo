@@ -10,7 +10,7 @@ class Config:
             depth=5,
             max_len=5000,
             batch_size=64,
-            lr=3e-4
+            lr=3e-4,
     ):
 
         self.random_seed = random_seed

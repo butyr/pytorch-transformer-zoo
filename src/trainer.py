@@ -1,8 +1,16 @@
 class Trainer:
 
-    def __init__(self, flags):
-        self.optimizer = self._get_optimizer()
-        self.loss_fn = self._get_loss_fn()
+    def __init__(
+            self,
+            model,
+            train_dataset,
+            eval_dataset,
+            tb_writer,
+    ):
+        self.model = model
+        self.train_dataset = train_dataset
+        self.eval_dataset = eval_dataset
+        self.tb_writer = tb_writer
 
     def _get_optimizer(self):
         pass
