@@ -8,7 +8,9 @@ class Config:
             model_dim=512,
             hidden_dim=128,
             depth=5,
-            max_len=5000,
+            max_len=5_000,
+            epochs=10,
+            eval_rate=1_000,
             batch_size=64,
             lr=3e-4,
             train_shuffle=True,
@@ -22,6 +24,8 @@ class Config:
         self.hidden_dim = hidden_dim
         self.depth = depth
         self.max_len = max_len
+        self.epochs = epochs
+        self.eval_rate = eval_rate
         self.batch_size = batch_size
         self.lr = lr
         self.train_shuffle = train_shuffle

@@ -28,7 +28,7 @@ class TextDataset(Dataset):
         self.path_src = path_root+path_src
         self.path_tgt = path_root+path_tgt
         self.len = self._get_file_len()
-        self.max_len = 0
+        self.max_len = 512
 
         self.tokenizer = Tokenizer(BPE(
             path_root + path_tokenizer + 'vocab.json',
@@ -60,10 +60,9 @@ class TextDataset(Dataset):
 
     @staticmethod
     def _blocks(files, size=65536):
-        while True:
+        b = ' '
+        while b:
             b = files.read(size)
-            if not b:
-                break
             yield b
 
     def __getitem__(self, i):

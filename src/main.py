@@ -11,6 +11,7 @@ def main():
         model_dim=10,
         hidden_dim=10,
         depth=2,
+        epochs=1,
     )
 
     train_dataset = TextDataset(
@@ -43,6 +44,7 @@ def main():
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,
         tb_writer=SummaryWriter(),
+        vocab_size=vocab_size,
     )
     train_op.fit()
 
