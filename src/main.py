@@ -15,8 +15,8 @@ def main():
 
     train_dataset = TextDataset(
         path_root='/home/ce5/PycharmProjects/ml-datasets/wmt14/',
-        path_src="train.en",
-        path_tgt="train.de",
+        path_src="newstest2014.en",
+        path_tgt="newstest2014.de",
         path_tokenizer='tokenizer/',
     )
 
@@ -38,6 +38,7 @@ def main():
     )
 
     train_op = Trainer(
+        flags=flags,
         model=model,
         train_dataset=train_dataset,
         eval_dataset=eval_dataset,

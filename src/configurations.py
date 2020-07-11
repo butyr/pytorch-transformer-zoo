@@ -11,6 +11,8 @@ class Config:
             max_len=5000,
             batch_size=64,
             lr=3e-4,
+            train_shuffle=True,
+            num_workers=0,
     ):
 
         self.random_seed = random_seed
@@ -22,3 +24,5 @@ class Config:
         self.max_len = max_len
         self.batch_size = batch_size
         self.lr = lr
+        self.train_shuffle = train_shuffle
+        self.num_workers = num_workers

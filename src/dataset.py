@@ -1,20 +1,20 @@
 from typing import Optional
 from torch.utils.data import Dataset
-from pathlib import Path
 import torch
 from torch.nn.utils.rnn import pad_sequence
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from tokenizers.normalizers import Lowercase, NFKC, Sequence
+import pandas as pd
 
 
 def pad_collate(batch):
-    (xx, yy) = zip(*batch)
+    (x, y) = zip(*batch)
 
-    xx_pad = pad_sequence(xx, batch_first=True, padding_value=0)
-    yy_pad = pad_sequence(yy, batch_first=True, padding_value=0)
+    x_pad = pad_sequence(x, batch_first=True, padding_value=0)
+    y_pad = pad_sequence(y, batch_first=True, padding_value=0)
 
-    return xx_pad, yy_pad
+    return x_pad, y_pad
 
 
 class TextDataset(Dataset):
@@ -25,6 +25,9 @@ class TextDataset(Dataset):
             path_tokenizer,
             path_root: Optional[str] = '',
     ):
+        self.path_src = path_root+path_src
+        self.path_tgt = path_root+path_tgt
+        self.len = self._get_file_len()
         self.max_len = 0
 
         self.tokenizer = Tokenizer(BPE(
@@ -36,15 +39,6 @@ class TextDataset(Dataset):
             Lowercase()
         ])
 
-        self.examples = []
-
-        src_file = Path(path_root+path_src)
-        tgt_file = Path(path_root + path_tgt)
-        src_lines = src_file.read_text(encoding="utf-8").splitlines()
-        tgt_lines = tgt_file.read_text(encoding="utf-8").splitlines()
-
-        self.examples = list(map(self._encode, src_lines, tgt_lines))
-
     def _encode(self, src_line, tgt_line):
         if len(src_line) > self.max_len:
             self.max_len = len(src_line)
@@ -52,13 +46,35 @@ class TextDataset(Dataset):
         if len(tgt_line) > self.max_len:
             self.max_len = len(tgt_line)
 
-        src = self.tokenizer.encode(src_line).ids
-        tgt = self.tokenizer.encode(tgt_line).ids
+        src = self.tokenizer.encode(str(src_line)).ids
+        tgt = self.tokenizer.encode(str(tgt_line)).ids
 
         return torch.tensor(src), torch.tensor(tgt)
 
     def __len__(self):
-        return len(self.examples)
+        return self.len
+
+    def _get_file_len(self):
+        with open(self.path_src, "r") as f:
+            return sum(bl.count("\n") for bl in self._blocks(f))
+
+    @staticmethod
+    def _blocks(files, size=65536):
+        while True:
+            b = files.read(size)
+            if not b:
+                break
+            yield b
 
     def __getitem__(self, i):
-        return self.examples[i]
+        reader_src = pd.read_csv(
+            self.path_src, sep='\n', skiprows=i, iterator=True,
+        )
+        reader_tgt = pd.read_csv(
+            self.path_tgt, sep='\n', skiprows=i, iterator=True,
+        )
+
+        return self._encode(
+            reader_src.get_chunk(1),
+            reader_tgt.get_chunk(1),
+        )
