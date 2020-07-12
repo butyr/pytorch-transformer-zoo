@@ -93,7 +93,7 @@ class Trainer:
                 batch_size=self.flags.batch_size,
                 shuffle=self.flags.train_shuffle,
                 num_workers=self.flags.num_workers,
-                collate_fn=self.train_datasetpad_collate,
+                collate_fn=self.train_dataset.pad_collate,
             )
         else:
             return DataLoader(
