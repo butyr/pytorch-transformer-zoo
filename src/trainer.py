@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from src.dataset import pad_collate
 
 
 class Trainer:
@@ -51,7 +50,6 @@ class Trainer:
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     self.evaluate()
-                break
 
     def predict(self, inputs):
         with torch.no_grad():
@@ -95,12 +93,12 @@ class Trainer:
                 batch_size=self.flags.batch_size,
                 shuffle=self.flags.train_shuffle,
                 num_workers=self.flags.num_workers,
-                collate_fn=pad_collate,
+                collate_fn=self.train_datasetpad_collate,
             )
         else:
             return DataLoader(
-                self.train_dataset,
+                self.eval_dataset,
                 batch_size=self.flags.batch_size,
                 num_workers=self.flags.num_workers,
-                collate_fn=pad_collate,
+                collate_fn=self.eval_dataset.pad_collate,
             )

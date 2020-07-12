@@ -8,15 +8,6 @@ from tokenizers.normalizers import Lowercase, NFKC, Sequence
 import pandas as pd
 
 
-def pad_collate(batch):
-    (x, y) = zip(*batch)
-
-    x_pad = pad_sequence(x, batch_first=True, padding_value=0)
-    y_pad = pad_sequence(y, batch_first=True, padding_value=0)
-
-    return x_pad, y_pad
-
-
 class TextDataset(Dataset):
     def __init__(
             self,
@@ -77,3 +68,12 @@ class TextDataset(Dataset):
             reader_src.get_chunk(1),
             reader_tgt.get_chunk(1),
         )
+
+    @staticmethod
+    def pad_collate(batch):
+        (x, y) = zip(*batch)
+
+        x_pad = pad_sequence(x, batch_first=True, padding_value=0)
+        y_pad = pad_sequence(y, batch_first=True, padding_value=0)
+
+        return x_pad, y_pad
