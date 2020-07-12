@@ -15,9 +15,11 @@ class TextDataset(Dataset):
             path_tgt,
             path_tokenizer,
             path_root: Optional[str] = '',
+            right_shift=False,
     ):
         self.path_src = path_root+path_src
         self.path_tgt = path_root+path_tgt
+        self.right_shift = right_shift
         self.len = self._get_file_len()
         self.max_len = 512
 
@@ -39,6 +41,9 @@ class TextDataset(Dataset):
 
         src = self.tokenizer.encode(str(src_line)).ids
         tgt = self.tokenizer.encode(str(tgt_line)).ids
+
+        if self.right_shift:
+            tgt = [0]+tgt
 
         return torch.tensor(src), torch.tensor(tgt)
 

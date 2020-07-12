@@ -19,6 +19,7 @@ def main():
         path_src="newstest2014.en",
         path_tgt="newstest2014.de",
         path_tokenizer='tokenizer/',
+        right_shift=True,
     )
 
     eval_dataset = TextDataset(
@@ -26,6 +27,7 @@ def main():
             path_src="newstest2014.en",
             path_tgt="newstest2014.de",
             path_tokenizer='tokenizer/',
+            right_shift=True,
         )
     vocab_size = train_dataset.tokenizer.get_vocab_size()
     max_len = max(train_dataset.max_len, eval_dataset.max_len)
