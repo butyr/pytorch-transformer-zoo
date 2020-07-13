@@ -95,7 +95,7 @@ class Trainer:
         for _ in range(batch_dummy.shape[-1]):
             batch_dummy = self.model(
                 batch_src,
-                torch.cuda.LongTensor(batch_dummy)
+                batch_dummy.type(torch.long)
             )
             stat_cuda('predict_loop')
 
