@@ -70,7 +70,10 @@ class Trainer:
                 batch_dummy = torch.zeros(batch_src.shape+(self.vocab_size,))
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
-                valid_loss += self.loss_fn(outputs, batch_tgt)
+                valid_loss += self.loss_fn(
+                    outputs.reshape(-1, self.vocab_size),
+                    batch_tgt.reshape(-1)
+                )
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[1]):
