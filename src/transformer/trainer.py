@@ -108,7 +108,7 @@ class Trainer:
         candidate_corpus = self.train_dataset.tokenizer.decode(
             torch.argmax(outputs, dim=-1)
         )
-        references_corpus = self.train_dataset.tokenizer.decod(batch_tgt)
+        references_corpus = self.train_dataset.tokenizer.decode(batch_tgt)
 
         return bleu_score(candidate_corpus, references_corpus)
 
