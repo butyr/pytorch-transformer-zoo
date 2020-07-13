@@ -3,14 +3,14 @@ Pytorch implementation of "Attention is all you need"
 
 ## Installation
 
-Install via pip (from Github):
+Install via pip:
 
 ```
 pip install git+https://github.com/butyr/pytorch-transformer.git
 ```
 
 ## Example
-```
+```python
 from transformer.trainer import *
 from transformer.configurations import *
 from transformer.dataset import *
