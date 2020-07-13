@@ -50,6 +50,8 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
+                print(loss)
+
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     self.evaluate()
 
