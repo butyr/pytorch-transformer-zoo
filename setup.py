@@ -20,4 +20,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires='>=3.6',
+    install_requires=[
+        'torch>=1.5.1',
+        'tokenizers>=0.8.0',
+        'tensorboard>=2.2.2',
+    ],
 )
