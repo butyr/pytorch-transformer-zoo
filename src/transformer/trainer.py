@@ -42,7 +42,7 @@ class Trainer:
                 self.model.train()
                 self.optimizer.zero_grad()
 
-                outputs = self.model(batch_src, batch_tgt)
+                outputs = self.model(batch_src.to(device), batch_tgt.to(device))
                 loss = self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
@@ -58,10 +58,7 @@ class Trainer:
             self.model.eval()
 
             outputs_dummy = torch.zeros_like(inputs, dtype=torch.long)
-            return self._predict_loop(
-                inputs.to(device),
-                outputs_dummy.to(device)
-            )
+            return self._predict_loop(inputs, outputs_dummy)
 
     def evaluate(self):
         valid_loss = 0
@@ -70,14 +67,8 @@ class Trainer:
             self.model.eval()
 
             for batch_src, batch_tgt in self.eval_dataloader:
-                batch_dummy = torch.zeros_like(
-                    batch_tgt,
-                    dtype=torch.long
-                )
-                outputs = self._predict_loop(
-                    batch_src.to(device),
-                    batch_dummy.to(device)
-                )
+                batch_dummy = torch.zeros_like(batch_tgt, dtype=torch.long)
+                outputs = self._predict_loop(batch_src, batch_dummy)
 
                 valid_loss += self.loss_fn(outputs, batch_tgt)
 
