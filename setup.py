@@ -24,5 +24,6 @@ setuptools.setup(
         'torch>=1.5.1',
         'tokenizers>=0.8.0',
         'tensorboard>=2.2.2',
+        'torchtext>=0.6.0',
     ],
 )

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from torchtext.data.metrics import bleu_score
 
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
@@ -15,6 +16,7 @@ class Trainer:
             eval_dataset,
             tb_writer,
             vocab_size,
+            save_path=None,
     ):
         self.flags = flags
         self.model = model
@@ -24,6 +26,7 @@ class Trainer:
         self.eval_dataloader = self._get_dataloader()
         self.tb_writer = tb_writer
         self.vocab_size = vocab_size
+        self.save_path = save_path if save_path is not None else '../checkpoints/model.ckp'
 
         self.optimizer = self._get_optimizer()
         self.loss_fn = self._get_loss_fn()
@@ -50,10 +53,20 @@ class Trainer:
                 loss.backward()
                 self.optimizer.step()
 
-                print(loss)
+                t = (epoch * len(batch)) + batch_idx
+                self.tb_writer.add_scalar('Train/loss', loss, t)
+                self.tb_writer.add_scalar(
+                    'Train/bleu', self._get_bleu_score(outputs, batch_tgt), t
+                )
+                self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
-                    self.evaluate()
+                    valid_loss, bleu = self.evaluate()
+                    self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
+                    self.tb_writer.add_scalar('Train/bleu', bleu, t)
+
+                    self.save_model()
+                    self.load_model()
 
     def predict(self, inputs):
         with torch.no_grad():
@@ -64,6 +77,7 @@ class Trainer:
 
     def evaluate(self):
         valid_loss = 0
+        bleu = 0
 
         with torch.no_grad():
             self.model.eval()
@@ -76,7 +90,10 @@ class Trainer:
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
-                print(valid_loss)
+                bleu += self._get_bleu_score(outputs, batch_tgt)
+
+        num_batches = (len(self.eval_dataset)//self.flags.batch_size)
+        return valid_loss/num_batches, bleu/num_batches
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[1]):
@@ -87,14 +104,19 @@ class Trainer:
 
         return batch_dummy
 
-    def _get_bleu_score(self):
-        pass
+    def _get_bleu_score(self, outputs, batch_tgt):
+        candidate_corpus = self.train_dataset.tokenizer.decode(
+            torch.argmax(outputs, dim=-1)
+        )
+        references_corpus = self.train_dataset.tokenizer.decod(batch_tgt)
+
+        return bleu_score(candidate_corpus, references_corpus)
 
     def save_model(self):
-        pass
+        torch.save(self.model.state_dict(), self.save_path)
 
     def load_model(self):
-        pass
+        self.model.load_state_dict(torch.load(self.save_path))
 
     def _get_dataloader(self, train=False):
 
@@ -113,3 +135,7 @@ class Trainer:
                 num_workers=self.flags.num_workers,
                 collate_fn=self.eval_dataset.pad_collate,
             )
+
+    def _get_lr(self):
+        for param_group in self.optimizer.param_groups:
+            return param_group['lr']
