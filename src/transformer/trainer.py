@@ -3,7 +3,6 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 def stat_cuda(msg):
@@ -93,6 +92,7 @@ class Trainer:
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[-1]):
+            print(batch_dummy.shape)
             batch_dummy = self.model(
                 batch_src,
                 batch_dummy.type(torch.long)
