@@ -1,5 +1,5 @@
 # pytorch-transformer
-Pytorch implementation of transformer model based on "Attention Is All You Need" ([Vaswani et al. 2017](https://arxiv.org/pdf/1706.03762.pdf)).
+PyTorch implementation of transformer model based on "Attention Is All You Need" ([Vaswani et al. 2017](https://arxiv.org/pdf/1706.03762.pdf)).
 
 ## Installation
 
