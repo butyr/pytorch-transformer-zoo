@@ -1,5 +1,5 @@
 # pytorch-transformer
-Pytorch implementation of "Attention is all you need" ([Vaswani et al. 2017](https://arxiv.org/pdf/1706.03762.pdf))
+Pytorch implementation of "Attention is all you need" ([Vaswani et al. 2017](https://arxiv.org/pdf/1706.03762.pdf)).
 
 ## Installation
 
