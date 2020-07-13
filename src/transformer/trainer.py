@@ -77,12 +77,10 @@ class Trainer:
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[1]):
-            print(torch.argmax(batch_dummy, dim=-1).shape)
             batch_dummy = self.model(
                 batch_src,
                 torch.argmax(batch_dummy, dim=-1)
             )
-            print(batch_dummy.shape)
 
         return batch_dummy
 
