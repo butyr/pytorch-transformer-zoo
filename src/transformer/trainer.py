@@ -70,7 +70,10 @@ class Trainer:
                 batch_dummy = torch.zeros_like(batch_tgt, dtype=torch.long)
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
-                valid_loss += self.loss_fn(outputs, batch_tgt.type(torch.double))
+                valid_loss += self.loss_fn(
+                    outputs.type(torch.double),
+                    batch_tgt
+                )
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[-1]):
