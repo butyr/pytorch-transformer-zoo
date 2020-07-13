@@ -58,6 +58,7 @@ def main():
             path_tokenizer='tokenizer/',
             right_shift=True,
         )
+
     vocab_size = train_dataset.tokenizer.get_vocab_size()
     max_len = max(train_dataset.max_len, eval_dataset.max_len)
     model = Transformer(
