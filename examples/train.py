@@ -1,6 +1,7 @@
 from src.transformer.trainer import *
 from src.transformer.configurations import *
 from src.transformer.dataset import *
+from src.transformer.transformer import *
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -14,7 +15,7 @@ def main():
     )
 
     train_dataset = TextDataset(
-        path_root='../../../ml-datasets/wmt14/',
+        path_root='../../ml-datasets/wmt14/',
         path_src="newstest2014.en",
         path_tgt="newstest2014.de",
         path_tokenizer='tokenizer/',
@@ -22,7 +23,7 @@ def main():
     )
 
     eval_dataset = TextDataset(
-            path_root='../../../ml-datasets/wmt14/',
+            path_root='../../ml-datasets/wmt14/',
             path_src="newstest2014.en",
             path_tgt="newstest2014.de",
             path_tokenizer='tokenizer/',
