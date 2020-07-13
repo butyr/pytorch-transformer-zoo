@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class Trainer:
 
@@ -15,7 +17,7 @@ class Trainer:
             vocab_size,
     ):
         self.flags = flags
-        self.model = model
+        self.model = model.to(device)
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
         self.train_dataloader = self._get_dataloader(train=True)
@@ -56,7 +58,10 @@ class Trainer:
             self.model.eval()
 
             outputs_dummy = torch.zeros_like(inputs)
-            return self._predict_loop(inputs, outputs_dummy)
+            return self._predict_loop(
+                inputs.to(device),
+                outputs_dummy.to(device)
+            )
 
     def evaluate(self):
         valid_loss = 0
@@ -65,14 +70,20 @@ class Trainer:
             self.model.eval()
 
             for batch_src, batch_tgt in self.eval_dataloader:
-                batch_dummy = torch.zeros_like(batch_tgt)
-                outputs = self._predict_loop(batch_src, batch_dummy)
+                batch_dummy = torch.zeros_like(batch_tgt.to(device))
+                outputs = self._predict_loop(
+                    batch_src.to(device),
+                    batch_dummy.to(device)
+                )
 
                 valid_loss += self.loss_fn(outputs, batch_tgt)
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[-1]):
-            batch_dummy = self.model(batch_src, batch_dummy)
+            batch_dummy = self.model(
+                batch_src.to(device),
+                batch_dummy.to(device)
+            )
 
         return batch_dummy
 

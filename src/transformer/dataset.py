@@ -8,6 +8,9 @@ from tokenizers.normalizers import Lowercase, NFKC, Sequence
 import pandas as pd
 
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 class TextDataset(Dataset):
     def __init__(
             self,
@@ -54,7 +57,7 @@ class TextDataset(Dataset):
         if self.right_shift:
             tgt = [0]+tgt
 
-        return torch.tensor(src), torch.tensor(tgt)
+        return torch.tensor(src).to(device), torch.tensor(tgt).to(device)
 
     def __len__(self):
         return self.len

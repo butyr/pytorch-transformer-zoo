@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pytorch-transformer-butyr",
-    version="0.0.1",
+    version="0.1.0",
     package_dir={"": "src"},
     packages=setuptools.find_namespace_packages(where="src"),
     author="Leonid Butyrev",
