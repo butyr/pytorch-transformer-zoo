@@ -43,13 +43,13 @@ class MultiHeadAttention(nn.Module):
     Args:
         model_dim: dimension of embedding.
         nheads: number of attention heads.
-        masked: sets whether an input mask should be used.
+        mask: sets whether an input mask should be used.
     """
 
-    def __init__(self, model_dim, nheads, masked=False):
+    def __init__(self, model_dim, nheads, mask=None):
         super().__init__()
 
-        self.masked = masked
+        self.mask = mask
         self.nheads = nheads
         self.model_dim = model_dim
 
@@ -101,10 +101,20 @@ class MultiHeadAttention(nn.Module):
         """
 
         score = torch.einsum('bqhd,bkhd->bhqk', query, key)
-        if self.masked:
+        if self.mask == 'triu':
             mask = torch.triu(
                 torch.ones(score.shape, dtype=torch.bool), diagonal=1
             )
+            score[mask] = -float('inf')
+
+        if self.mask == 'diag':
+            mask = torch.eye(
+                n=score.shape[-2], m=score.shape[-1], dtype=torch.bool,
+            )
+            mask = mask.reshape(-1).repeat(
+                (1, np.prod(score.shape[:2]))
+            ).reshape(score.shape)
+
             score[mask] = -float('inf')
 
         self.att = F.softmax(score / np.sqrt(score.shape[-1]), dim=-1)
@@ -164,7 +174,9 @@ class EncoderLayer(nn.Module):
 
     def __init__(self, model_dim, hidden_dim, nheads):
         super().__init__()
-        self.mhatt = MultiHeadAttention(model_dim, nheads)
+        self.mhatt = MultiHeadAttention(
+            model_dim, nheads, mask='diag',
+        )
         self.ffn = nn.Sequential(
             nn.Linear(model_dim, hidden_dim),
             nn.ReLU(),
@@ -184,7 +196,7 @@ class DecoderLayer(nn.Module):
     def __init__(self, model_dim, hidden_dim, nheads):
         super().__init__()
         self.mhatt_masked = MultiHeadAttention(
-            model_dim, nheads, masked=True
+            model_dim, nheads, mask='triu',
         )
         self.mhatt = MultiHeadAttention(model_dim, nheads)
 

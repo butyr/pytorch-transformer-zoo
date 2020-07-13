@@ -20,7 +20,7 @@ torch.manual_seed(1234)
 class TestTensorShapes(unittest.TestCase):
 
     def test_attention(self):
-        mhatt = MultiHeadAttention(nheads*d_key, nheads, masked=True)
+        mhatt = MultiHeadAttention(nheads*d_key, nheads, mask='triu')
 
         A = torch.ones((batch_size, sent_len, nheads, d_key))
         B = torch.ones((batch_size, int(sent_len/2), nheads, d_key))
@@ -35,7 +35,7 @@ class TestTensorShapes(unittest.TestCase):
         )
 
     def test_multi_head_attention(self):
-        mhatt = MultiHeadAttention(model_dim, nheads, masked=True)
+        mhatt = MultiHeadAttention(model_dim, nheads, mask='triu')
 
         A = torch.ones((batch_size, sent_len, model_dim))
         B = torch.ones((batch_size, sent_len // 2, model_dim))
