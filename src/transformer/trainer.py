@@ -57,7 +57,7 @@ class Trainer:
         with torch.no_grad():
             self.model.eval()
 
-            outputs_dummy = torch.zeros_like(inputs)
+            outputs_dummy = torch.zeros_like(inputs, dtype=torch.long)
             return self._predict_loop(
                 inputs.to(device),
                 outputs_dummy.to(device)
@@ -70,7 +70,10 @@ class Trainer:
             self.model.eval()
 
             for batch_src, batch_tgt in self.eval_dataloader:
-                batch_dummy = torch.zeros_like(batch_tgt.to(device))
+                batch_dummy = torch.zeros_like(
+                    batch_tgt.to(device),
+                    dtype=torch.long
+                )
                 outputs = self._predict_loop(
                     batch_src.to(device),
                     batch_dummy.to(device)
@@ -80,10 +83,10 @@ class Trainer:
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[-1]):
-            batch_dummy = self.model(
+            batch_dummy = torch.LongTensor(self.model(
                 batch_src.to(device),
                 batch_dummy.to(device)
-            )
+            ))
 
         return batch_dummy
 
