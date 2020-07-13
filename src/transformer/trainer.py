@@ -86,6 +86,7 @@ class Trainer:
 
             for batch_src, batch_tgt in self.eval_dataloader:
                 batch_dummy = torch.zeros_like(batch_tgt, dtype=torch.long)
+                stat_cuda('batch_dummy')
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
                 valid_loss += self.loss_fn(outputs, batch_tgt)
@@ -96,6 +97,7 @@ class Trainer:
                 batch_src,
                 torch.tensor(batch_dummy, dtype=torch.long, device=device)
             )
+            stat_cuda('predict_loop')
 
         return batch_dummy
 
