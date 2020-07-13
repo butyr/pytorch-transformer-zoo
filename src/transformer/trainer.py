@@ -67,13 +67,14 @@ class Trainer:
             self.model.eval()
 
             for batch_src, batch_tgt in self.eval_dataloader:
-                batch_dummy = torch.zeros(batch_tgt.shape+(self.vocab_size,))
+                batch_dummy = torch.zeros(batch_src.shape+(self.vocab_size,))
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
                 valid_loss += self.loss_fn(outputs, batch_tgt)
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[1]):
+            print(torch.argmax(batch_dummy, dim=-1).shape)
             batch_dummy = self.model(
                 batch_src,
                 torch.argmax(batch_dummy, dim=-1)
