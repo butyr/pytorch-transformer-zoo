@@ -57,7 +57,7 @@ class Trainer:
         with torch.no_grad():
             self.model.eval()
 
-            outputs_dummy = torch.zeros_like(inputs, dtype=torch.long)
+            outputs_dummy = torch.zeros(inputs.shape+(self.vocab_size,))
             return self._predict_loop(inputs, outputs_dummy)
 
     def evaluate(self):
@@ -67,21 +67,17 @@ class Trainer:
             self.model.eval()
 
             for batch_src, batch_tgt in self.eval_dataloader:
-                batch_dummy = torch.zeros_like(batch_tgt, dtype=torch.long)
+                batch_dummy = torch.zeros(batch_tgt.shape+(self.vocab_size,))
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
-                valid_loss += self.loss_fn(
-                    outputs.type(torch.double),
-                    batch_tgt
-                )
+                valid_loss += self.loss_fn(outputs, batch_tgt)
 
     def _predict_loop(self, batch_src, batch_dummy):
-        for _ in range(batch_dummy.shape[-1]):
+        for _ in range(batch_dummy.shape[1]):
             batch_dummy = self.model(
                 batch_src,
-                batch_dummy.type(torch.long)
+                torch.argmax(batch_dummy, dim=-1)
             )
-            batch_dummy = torch.argmax(batch_dummy, dim=-1)
 
         return batch_dummy
 
