@@ -74,7 +74,7 @@ class Trainer:
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
-            print(valid_loss/len(self.eval_dataset))
+                print(valid_loss/len(self.eval_dataset))
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[1]):
