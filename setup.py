@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pytorch_transformer_butyr",
+    name="pytorch-transformer-butyr",
     version="0.0.1",
     author="Leonid Butyrev",
     author_email="L.Butyrev@gmx.de",
