@@ -1,5 +1,5 @@
 # pytorch-transformer
-Pytorch implementation of "Attention is all you need"
+Pytorch implementation of "Attention is all you need" ([Vaswani et al. 2017](https://arxiv.org/pdf/1706.03762.pdf))
 
 ## Installation
 
@@ -13,6 +13,7 @@ pip install git+https://github.com/butyr/pytorch-transformer.git
 
 ```python
 from transformer.transformer import Transformer
+
 
 model = Transformer(
         vocab_size=25_000,
