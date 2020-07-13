@@ -1,7 +1,7 @@
-from src.transformer.trainer import *
-from src.transformer.configurations import *
-from src.transformer.dataset import *
-from src.transformer.transformer import *
+from src.transformer.trainer import Trainer
+from src.transformer.configurations import Config
+from src.transformer.dataset import TextDataset
+from src.transformer.transformer import Transformer
 from torch.utils.tensorboard import SummaryWriter
 
 
