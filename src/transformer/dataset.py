@@ -42,17 +42,19 @@ class TextDataset(Dataset):
         )
 
     def _encode(self, src_line, tgt_line):
-        if len(src_line) > self.max_len:
-            self.max_len = len(src_line)
-
-        if len(tgt_line) > self.max_len:
-            self.max_len = len(tgt_line)
-
         src = self.tokenizer.encode(str(src_line)).ids
         tgt = self.tokenizer.encode(str(tgt_line)).ids
 
         if self.right_shift:
             tgt = [0]+tgt
+
+        max_len = max(len(src), len(tgt))
+
+        if max_len > self.max_len:
+            self.max_len = max_len
+
+        src = src + [0] * (max_len - len(src))
+        tgt = tgt + [0] * (max_len - len(tgt))
 
         return torch.tensor(src), torch.tensor(tgt)
 
