@@ -5,16 +5,6 @@ from torch.utils.data import DataLoader
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 
-def stat_cuda(msg):
-    print('--', msg)
-    print('allocated: %dM, max allocated: %dM, cached: %dM, max cached: %dM' % (
-        torch.cuda.memory_allocated() / 1024 / 1024,
-        torch.cuda.max_memory_allocated() / 1024 / 1024,
-        torch.cuda.memory_cached() / 1024 / 1024,
-        torch.cuda.max_memory_cached() / 1024 / 1024
-    ))
-
-
 class Trainer:
 
     def __init__(
@@ -46,29 +36,22 @@ class Trainer:
         return nn.CrossEntropyLoss()
 
     def fit(self):
-        stat_cuda('start')
-
         for epoch in range(self.flags.epochs):
             for batch_idx, batch in enumerate(self.train_dataloader):
                 batch_src, batch_tgt = batch
                 self.model.train()
                 self.optimizer.zero_grad()
-                stat_cuda('zero_grad')
 
                 outputs = self.model(batch_src, batch_tgt)
-                stat_cuda('forward')
                 loss = self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
-                stat_cuda('loss_fn')
                 loss.backward()
                 self.optimizer.step()
-                stat_cuda('optimizer step')
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     self.evaluate()
-                    stat_cuda('evaluate')
 
     def predict(self, inputs):
         with torch.no_grad():
@@ -85,19 +68,16 @@ class Trainer:
 
             for batch_src, batch_tgt in self.eval_dataloader:
                 batch_dummy = torch.zeros_like(batch_tgt, dtype=torch.long)
-                stat_cuda('batch_dummy')
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
-                valid_loss += self.loss_fn(outputs, batch_tgt)
+                valid_loss += self.loss_fn(outputs, batch_tgt.type(torch.double))
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[-1]):
-            print(batch_dummy.shape)
             batch_dummy = self.model(
                 batch_src,
                 batch_dummy.type(torch.long)
             )
-            stat_cuda('predict_loop')
             batch_dummy = torch.argmax(batch_dummy, dim=-1)
 
         return batch_dummy
