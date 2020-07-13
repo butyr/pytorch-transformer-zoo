@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+torch.set_default_tensor_type('torch.cuda.FloatTensor')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
@@ -17,7 +18,7 @@ class Trainer:
             vocab_size,
     ):
         self.flags = flags
-        self.model = model.to(device)
+        self.model = model
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
         self.train_dataloader = self._get_dataloader(train=True)
@@ -42,7 +43,7 @@ class Trainer:
                 self.model.train()
                 self.optimizer.zero_grad()
 
-                outputs = self.model(batch_src.to(device), batch_tgt.to(device))
+                outputs = self.model(batch_src, batch_tgt)
                 loss = self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
@@ -75,7 +76,7 @@ class Trainer:
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[-1]):
             batch_dummy = self.model(
-                batch_src.to(device),
+                batch_src,
                 torch.tensor(batch_dummy, dtype=torch.long, device=device)
             )
 
