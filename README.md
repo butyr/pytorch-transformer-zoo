@@ -9,6 +9,21 @@ Install via pip:
 pip install git+https://github.com/butyr/pytorch-transformer.git
 ```
 
+## Usage
+
+```python
+from transformer.transformer import Transformer
+
+model = Transformer(
+        vocab_size=vocab_size,
+        model_dim=model_dim,
+        hidden_dim=hidden_dim,
+        nheads=nheads,
+        max_len=max_len,
+        depth=depth,
+    )
+```
+
 ## Example
 ```python
 from transformer.trainer import *
