@@ -27,10 +27,10 @@ model = Transformer(
 
 ## Example
 ```python
-from transformer.trainer import *
-from transformer.configurations import *
-from transformer.dataset import *
-from transformer.transformer import *
+from transformer.trainer import Trainer
+from transformer.configurations import Config
+from transformer.dataset import TextDataset
+from transformer.transformer import Transformer
 from torch.utils.tensorboard import SummaryWriter
 
 
