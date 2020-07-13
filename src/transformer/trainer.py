@@ -79,6 +79,7 @@ class Trainer:
                 batch_src,
                 torch.argmax(batch_dummy, dim=-1)
             )
+            print(batch_dummy.shape)
 
         return batch_dummy
 
