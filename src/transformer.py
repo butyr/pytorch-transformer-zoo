@@ -109,7 +109,7 @@ class MultiHeadAttention(nn.Module):
 
         if self.mask == 'diag':
             mask = torch.eye(
-                n=score.shape[-2], m=score.shape[-1], dtype=torch.bool,
+                n=score.shape[2], m=score.shape[3], dtype=torch.bool,
             )
             mask = mask.reshape(-1).repeat(
                 (1, np.prod(score.shape[:2]))
