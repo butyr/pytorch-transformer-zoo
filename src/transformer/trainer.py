@@ -85,7 +85,7 @@ class Trainer:
         for _ in range(batch_dummy.shape[-1]):
             batch_dummy = self.model(
                 batch_src.to(device),
-                torch.LongTensor(batch_dummy).to(device)
+                torch.LongTensor(batch_dummy, device=device)
             )
 
         return batch_dummy
