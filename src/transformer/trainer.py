@@ -95,7 +95,10 @@ class Trainer:
         for _ in range(batch_dummy.shape[-1]):
             batch_dummy = self.model(
                 batch_src,
-                torch.tensor(batch_dummy, dtype=torch.long, device=device)
+                torch.tensor(
+                    batch_dummy.clone().detach(),
+                    dtype=torch.long,
+                    device=device)
             )
             stat_cuda('predict_loop')
 
