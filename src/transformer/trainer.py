@@ -98,6 +98,7 @@ class Trainer:
                 batch_dummy.type(torch.long)
             )
             stat_cuda('predict_loop')
+            batch_dummy = torch.argmax(batch_dummy, dim=-1)
 
         return batch_dummy
 
