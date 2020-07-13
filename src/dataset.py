@@ -32,6 +32,15 @@ class TextDataset(Dataset):
             Lowercase()
         ])
 
+        self.reader_src = pd.read_csv(
+            self.path_src, sep='\n', iterator=True, chunksize=1,
+            header=None,
+        )
+        self.reader_tgt = pd.read_csv(
+            self.path_tgt, sep='\n', iterator=True, chunksize=1,
+            header=None,
+        )
+
     def _encode(self, src_line, tgt_line):
         if len(src_line) > self.max_len:
             self.max_len = len(src_line)
@@ -62,16 +71,9 @@ class TextDataset(Dataset):
             yield b
 
     def __getitem__(self, i):
-        reader_src = pd.read_csv(
-            self.path_src, sep='\n', skiprows=i, iterator=True,
-        )
-        reader_tgt = pd.read_csv(
-            self.path_tgt, sep='\n', skiprows=i, iterator=True,
-        )
-
         return self._encode(
-            reader_src.get_chunk(1),
-            reader_tgt.get_chunk(1),
+            next(self.reader_src),
+            next(self.reader_tgt),
         )
 
     @staticmethod
