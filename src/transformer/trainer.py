@@ -6,6 +6,16 @@ torch.set_default_tensor_type('torch.cuda.FloatTensor')
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
+def stat_cuda(msg):
+    print('--', msg)
+    print('allocated: %dM, max allocated: %dM, cached: %dM, max cached: %dM' % (
+        torch.cuda.memory_allocated() / 1024 / 1024,
+        torch.cuda.max_memory_allocated() / 1024 / 1024,
+        torch.cuda.memory_cached() / 1024 / 1024,
+        torch.cuda.max_memory_cached() / 1024 / 1024
+    ))
+
+
 class Trainer:
 
     def __init__(
@@ -37,22 +47,29 @@ class Trainer:
         return nn.CrossEntropyLoss()
 
     def fit(self):
+        stat_cuda('start')
+
         for epoch in range(self.flags.epochs):
             for batch_idx, batch in enumerate(self.train_dataloader):
                 batch_src, batch_tgt = batch
                 self.model.train()
                 self.optimizer.zero_grad()
+                stat_cuda('zero_grad')
 
                 outputs = self.model(batch_src, batch_tgt)
+                stat_cuda('forward')
                 loss = self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
+                stat_cuda('loss_fn')
                 loss.backward()
                 self.optimizer.step()
+                stat_cuda('optimizer step')
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     self.evaluate()
+                    stat_cuda('evaluate')
 
     def predict(self, inputs):
         with torch.no_grad():
