@@ -3,7 +3,8 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import sys
-torch.set_default_tensor_type('torch.cuda.FloatTensor')
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Trainer:
@@ -19,7 +20,7 @@ class Trainer:
             save_path=None,
     ):
         self.flags = flags
-        self.model = model
+        self.model = model.to(device)
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
         self.train_dataloader = self._get_dataloader(train=True)
@@ -48,6 +49,9 @@ class Trainer:
 
             for batch_idx, batch in enumerate(tqdm(self.train_dataloader)):
                 batch_src, batch_tgt = batch
+                batch_src = batch_src.to(device)
+                batch_tgt = batch_tgt.to(device)
+
                 self.model.train()
                 self.optimizer.zero_grad()
 
@@ -77,7 +81,7 @@ class Trainer:
             self.model.eval()
 
             outputs_dummy = torch.zeros(inputs.shape+(self.vocab_size,))
-            return self._predict_loop(inputs, outputs_dummy)
+            return self._predict_loop(inputs.to(device), outputs_dummy.to(device))
 
     def evaluate(self):
         valid_loss = 0
@@ -87,7 +91,7 @@ class Trainer:
 
             for batch_src, batch_tgt in tqdm(self.eval_dataloader):
                 batch_dummy = torch.zeros(batch_tgt.shape+(self.vocab_size,))
-                outputs = self._predict_loop(batch_src, batch_dummy)
+                outputs = self._predict_loop(batch_src.to(device), batch_dummy.to(device))
 
                 valid_loss += self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
