@@ -97,7 +97,7 @@ class Trainer:
                 ).to(device)
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
-                print(outputs.is_cuda())
+                print(outputs.is_cuda)
 
                 valid_loss += self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
