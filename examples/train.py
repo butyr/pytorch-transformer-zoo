@@ -7,17 +7,17 @@ from torch.utils.tensorboard import SummaryWriter
 
 def main():
     flags = Config(
-        nheads=2,
-        model_dim=10,
-        hidden_dim=10,
-        depth=2,
-        epochs=1,
+        nheads=8,
+        model_dim=512,
+        hidden_dim=2048,
+        depth=6,
+        epochs=10,
     )
 
     train_dataset = TextDataset(
         path_root='../../ml-datasets/wmt14/',
-        path_src="newstest2014.en",
-        path_tgt="newstest2014.de",
+        path_src="train.en",
+        path_tgt="train.de",
         path_tokenizer='tokenizer/',
     )
 
