@@ -23,6 +23,11 @@ class MultiSequential(nn.Sequential):
         return inputs
 
 
+def clones(module, n):
+    """Produce n identical layers."""
+    return nn.ModuleList([copy.deepcopy(module) for _ in range(n)])
+
+
 def seq_clones(module, seq_len):
     """Produce sequential model with seq_len identical layers."""
 
@@ -180,9 +185,11 @@ class EncoderLayer(nn.Module):
             nn.Linear(hidden_dim, model_dim)
         )
 
+        self.layer_norms = clones(nn.LayerNorm(model_dim), 2)
+
     def forward(self, src):
-        src_att = self.mhatt(src, src, src)+src
-        src_out = self.ffn(src_att)+src_att
+        src_att = self.layer_norms[0](self.mhatt(src, src, src) + src)
+        src_out = self.layer_norms[1](self.ffn(src_att) + src_att)
 
         return src_out
 
@@ -203,10 +210,12 @@ class DecoderLayer(nn.Module):
             nn.Linear(hidden_dim, model_dim)
         )
 
+        self.layer_norms = clones(nn.LayerNorm(model_dim), 3)
+
     def forward(self, tgt, enc):
-        tgt_att1 = self.mhatt_masked(tgt, tgt, tgt)+tgt
-        tgt_att2 = self.mhatt(tgt_att1, enc, enc)+tgt_att1
-        tgt_out = self.ffn(tgt_att2)+tgt_att2
+        tgt_att1 = self.layer_norms[0](self.mhatt_masked(tgt, tgt, tgt) + tgt)
+        tgt_att2 = self.layer_norms[1](self.mhatt(tgt_att1, enc, enc) + tgt_att1)
+        tgt_out = self.layer_norms[2](self.ffn(tgt_att2) + tgt_att2)
 
         return tgt_out, enc
 
