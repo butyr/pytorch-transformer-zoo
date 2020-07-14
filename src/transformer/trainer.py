@@ -1,3 +1,5 @@
+import sys
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -61,6 +63,11 @@ class Trainer:
                 t = (epoch * len(batch)) + batch_idx
                 self.tb_writer.add_scalar('Train/loss', loss, t)
                 self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
+
+                sys.stdout.write("[%-60s] %d%%" % ('=' * (60 * (batch_idx + 1) / 10), (100 * (batch_idx + 1) / 10)))
+                sys.stdout.flush()
+                sys.stdout.write(", batch %d" % (batch_idx + 1))
+                sys.stdout.flush()
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     valid_loss = self.evaluate()
