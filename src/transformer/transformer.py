@@ -8,6 +8,8 @@ import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class MultiSequential(nn.Sequential):
     """Sequential model with as many inputs as outputs."""
@@ -263,8 +265,11 @@ class Transformer(nn.Module):
         self.tgt_embedding = None
 
     def forward(self, src, tgt):
+        right_shift = torch.zeros((tgt.shape[0], 1), dtype=torch.long, device=device)
+        tgt_rs = torch.cat([right_shift, tgt], dim=1)[:, :-1]
+
         self.src_embedding = self.embedding(src)
-        self.tgt_embedding = self.embedding(tgt)
+        self.tgt_embedding = self.embedding(tgt_rs)
 
         src_pe = self.pos_enc(self.src_embedding)
         tgt_pe = self.pos_enc(self.tgt_embedding)

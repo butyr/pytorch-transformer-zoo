@@ -5,7 +5,6 @@ from torch.nn.utils.rnn import pad_sequence
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
 from tokenizers.normalizers import Lowercase, NFKC, Sequence
-import pandas as pd
 
 
 class TextDataset(Dataset):
@@ -15,68 +14,49 @@ class TextDataset(Dataset):
             path_tgt,
             path_tokenizer,
             path_root: Optional[str] = '',
-            right_shift=False,
     ):
         self.path_src = path_root+path_src
         self.path_tgt = path_root+path_tgt
-        self.right_shift = right_shift
-        self.len = self._get_file_len()
+        self.len = 0
         self.max_len = 512
 
-        self.tokenizer = Tokenizer(BPE(
-            path_root + path_tokenizer + 'vocab.json',
-            path_root + path_tokenizer + 'merges.txt',
-        ))
+        self.tokenizer = Tokenizer(
+            BPE(
+                path_root + path_tokenizer + 'vocab.json',
+                path_root + path_tokenizer + 'merges.txt',
+            )
+        )
         self.tokenizer.normalizer = Sequence([
             NFKC(),
             Lowercase()
         ])
 
-        self.reader_src = pd.read_csv(
-            self.path_src, sep='\n', iterator=True, chunksize=1,
-            header=None,
-        )
-        self.reader_tgt = pd.read_csv(
-            self.path_tgt, sep='\n', iterator=True, chunksize=1,
-            header=None,
-        )
+        with open(self.path_src, 'r+') as f:
+            lines_src = f.readlines()
+
+        with open(self.path_tgt, 'r+') as f:
+            lines_tgt = f.readlines()
+
+        self.len = len(lines_src)
+        self.example = list(zip(lines_src, lines_tgt))
 
     def _encode(self, src_line, tgt_line):
         src = self.tokenizer.encode(str(src_line)).ids
         tgt = self.tokenizer.encode(str(tgt_line)).ids
 
-        if self.right_shift:
-            tgt = [0]+tgt
+        if len(src_line) > self.max_len:
+            self.max_len = len(src_line)
 
-        max_len = max(len(src), len(tgt))
-
-        if max_len > self.max_len:
-            self.max_len = max_len
-
-        src = src + [0] * (max_len - len(src))
-        tgt = tgt + [0] * (max_len - len(tgt))
+        if len(tgt_line) > self.max_len:
+            self.max_len = len(tgt_line)
 
         return torch.tensor(src), torch.tensor(tgt)
 
     def __len__(self):
         return self.len
 
-    def _get_file_len(self):
-        with open(self.path_src, "r") as f:
-            return sum(bl.count("\n") for bl in self._blocks(f))
-
-    @staticmethod
-    def _blocks(files, size=65536):
-        b = ' '
-        while b:
-            b = files.read(size)
-            yield b
-
     def __getitem__(self, i):
-        return self._encode(
-            next(self.reader_src),
-            next(self.reader_tgt),
-        )
+        return self._encode(*self.example[i])
 
     @staticmethod
     def pad_collate(batch):
