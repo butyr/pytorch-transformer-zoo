@@ -71,6 +71,7 @@ class Trainer:
                     )
                     self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
 
+                torch.cuda.empty_cache()
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     valid_loss, bleu = self.evaluate()
 
@@ -103,6 +104,7 @@ class Trainer:
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
+                torch.cuda.empty_cache()
 
         num_batches = (len(self.eval_dataset)//self.flags.batch_size)
         return valid_loss/num_batches
