@@ -97,9 +97,11 @@ class Trainer:
                 ).to(device)
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
+                print(outputs.is_cuda())
+
                 valid_loss += self.loss_fn(
-                    outputs.reshape(-1, self.vocab_size).to(device),
-                    batch_tgt.reshape(-1).to(device)
+                    outputs.reshape(-1, self.vocab_size),
+                    batch_tgt.reshape(-1)
                 )
 
         num_batches = (len(self.eval_dataset)//self.flags.batch_size)
