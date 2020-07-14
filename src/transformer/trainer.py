@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-torch.set_default_tensor_type('torch.cuda.FloatTensor')
+#torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 
 class Trainer:
@@ -38,7 +38,13 @@ class Trainer:
         return nn.CrossEntropyLoss()
 
     def fit(self):
+        print("Train on {0} samples, validate on {1} samples".format(
+            self.train_dataset.len, self.eval_dataset.len
+        ))
+
         for epoch in range(self.flags.epochs):
+            print("Epoch {0}/{1}".format(epoch, self.flags.epochs))
+
             for batch_idx, batch in enumerate(self.train_dataloader):
                 batch_src, batch_tgt = batch
                 self.model.train()
