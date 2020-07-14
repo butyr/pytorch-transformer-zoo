@@ -13,6 +13,7 @@ vocab_size = 14
 
 max_len = sent_len * 100
 depth = 2
+dropout_p = 0.1
 
 torch.manual_seed(1234)
 
@@ -50,8 +51,9 @@ class TestTensorShapes(unittest.TestCase):
             model_dim,
             hidden_dim,
             nheads,
+            depth,
+            dropout_p,
             max_len,
-            depth
         )
 
         x = torch.ones(
@@ -173,8 +175,9 @@ class TestSanityChecks(unittest.TestCase):
             model_dim,
             hidden_dim,
             nheads,
+            depth,
+            dropout_p,
             max_len,
-            depth
         )
 
         inputs = torch.arange(
@@ -207,8 +210,9 @@ class TestGradientFlows(unittest.TestCase):
             model_dim,
             hidden_dim,
             nheads,
+            depth,
+            dropout_p,
             max_len,
-            depth
         )
 
         inputs = torch.ones(
@@ -255,8 +259,9 @@ class TestGradientFlows(unittest.TestCase):
             model_dim,
             hidden_dim,
             nheads,
+            depth,
+            dropout_p,
             max_len,
-            depth
         )
 
         inputs = torch.ones(
@@ -298,8 +303,9 @@ class TestGradientFlows(unittest.TestCase):
             model_dim,
             hidden_dim,
             nheads,
+            depth,
+            dropout_p,
             max_len,
-            depth
         )
 
         inputs = torch.ones(
