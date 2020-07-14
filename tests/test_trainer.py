@@ -3,10 +3,11 @@ from src.transformer.trainer import Trainer
 from src.transformer.configurations import Config
 from src.transformer.dataset import TextDataset
 from src.transformer.transformer import Transformer
+from torch.utils.tensorboard import SummaryWriter
 
 
 class TestTrainer(unittest.TestCase):
-
+  
     def setUp(self):
         flags = Config(
             nheads=2,
@@ -57,3 +58,4 @@ class TestTrainer(unittest.TestCase):
 
         outputs = self.train_op.model(batch_src, batch_tgt)
         self.train_op._get_bleu_score(outputs, batch_tgt)
+        

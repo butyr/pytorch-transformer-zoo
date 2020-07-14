@@ -1,9 +1,8 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchtext.data.metrics import bleu_score
 
-#torch.set_default_tensor_type('torch.cuda.FloatTensor')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Trainer:
@@ -19,7 +18,7 @@ class Trainer:
             save_path=None,
     ):
         self.flags = flags
-        self.model = model
+        self.model = model.to(device)
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
         self.train_dataloader = self._get_dataloader(train=True)
@@ -39,9 +38,18 @@ class Trainer:
         return nn.CrossEntropyLoss()
 
     def fit(self):
+        print("Train on {0} samples, validate on {1} samples".format(
+            self.train_dataset.len, self.eval_dataset.len
+        ))
+
         for epoch in range(self.flags.epochs):
+            print("Epoch {0}/{1}".format(epoch, self.flags.epochs))
+
             for batch_idx, batch in enumerate(self.train_dataloader):
                 batch_src, batch_tgt = batch
+                batch_src = batch_src.to(device)
+                batch_tgt = batch_tgt.to(device)
+
                 self.model.train()
                 self.optimizer.zero_grad()
 
@@ -74,33 +82,35 @@ class Trainer:
             self.model.eval()
 
             outputs_dummy = torch.zeros(inputs.shape+(self.vocab_size,))
-            return self._predict_loop(inputs, outputs_dummy)
+            return self._predict_loop(inputs.to(device), outputs_dummy.to(device))
 
     def evaluate(self):
         valid_loss = 0
-        bleu = 0
 
         with torch.no_grad():
             self.model.eval()
 
             for batch_src, batch_tgt in self.eval_dataloader:
-                batch_dummy = torch.zeros(batch_src.shape+(self.vocab_size,))
+                batch_src = batch_src.to(device)
+                batch_tgt = batch_src.to(device)
+                batch_dummy = torch.zeros(
+                    batch_tgt.shape+(self.vocab_size,)
+                ).to(device)
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
                 valid_loss += self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
-                bleu += self._get_bleu_score(outputs, batch_tgt)
 
         num_batches = (len(self.eval_dataset)//self.flags.batch_size)
-        return valid_loss/num_batches, bleu/num_batches
+        return valid_loss/num_batches
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[1]):
             batch_dummy = self.model(
                 batch_src,
-                torch.argmax(batch_dummy, dim=-1)
+                torch.argmax(batch_dummy, dim=2)
             )
 
         return batch_dummy

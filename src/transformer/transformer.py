@@ -8,6 +8,8 @@ import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 class MultiSequential(nn.Sequential):
     """Sequential model with as many inputs as outputs."""
@@ -19,6 +21,11 @@ class MultiSequential(nn.Sequential):
             else:
                 inputs = module(inputs)
         return inputs
+
+
+def clones(module, n):
+    """Produce n identical layers."""
+    return nn.ModuleList([copy.deepcopy(module) for _ in range(n)])
 
 
 def seq_clones(module, seq_len):
@@ -41,7 +48,7 @@ class MultiHeadAttention(nn.Module):
         mask: sets whether an input mask should be used.
     """
 
-    def __init__(self, model_dim, nheads, mask=None):
+    def __init__(self, model_dim, nheads, p=0.1, mask=None):
         super().__init__()
 
         self.mask = mask
@@ -54,6 +61,8 @@ class MultiHeadAttention(nn.Module):
         self.linear_out = nn.Linear(model_dim, model_dim)
 
         self.att = None
+
+        self.dropout = nn.Dropout(p=p)
 
     def forward(self, query, key, value):
         """Compute multi-head attention forward pass.
@@ -81,7 +90,7 @@ class MultiHeadAttention(nn.Module):
         )
         ret = ret.reshape(ret.shape[:2] + (self.model_dim,))
 
-        return self.linear_out(ret)
+        return self.dropout(self.linear_out(ret))
 
     def attention(self, query, key, value):
         """Compute scaled dot-product attention.
@@ -145,7 +154,7 @@ class PositionalEncoder(nn.Module):
     Based on https://nlp.seas.harvard.edu/2018/04/03/attention.html.
     """
 
-    def __init__(self, d_model, max_len=5000):
+    def __init__(self, d_model, max_len=5000, p=0.1):
         super().__init__()
 
         # Compute the positional encodings once in log space.
@@ -158,29 +167,34 @@ class PositionalEncoder(nn.Module):
         pos_enc = pos_enc.unsqueeze(0)
         self.register_buffer('pe', pos_enc)
 
+        self.dropout = nn.Dropout(p=p)
+
     def forward(self, x):
         x = x + Variable(self.pe[:, :x.size(1)],
                          requires_grad=False)
-        return x
+        return self.dropout(x)
 
 
 class EncoderLayer(nn.Module):
     """Implement encoder sub-layers."""
 
-    def __init__(self, model_dim, hidden_dim, nheads):
+    def __init__(self, model_dim, hidden_dim, nheads, p=0.1):
         super().__init__()
         self.mhatt = MultiHeadAttention(
-            model_dim, nheads, mask='diag',
+            model_dim, nheads, p, mask='diag',
         )
         self.ffn = nn.Sequential(
             nn.Linear(model_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, model_dim)
+            nn.Linear(hidden_dim, model_dim),
+            nn.Dropout(p=p),
         )
 
+        self.layer_norms = clones(nn.LayerNorm(model_dim), 2)
+
     def forward(self, src):
-        src_att = self.mhatt(src, src, src)+src
-        src_out = self.ffn(src_att)+src_att
+        src_att = self.layer_norms[0](self.mhatt(src, src, src) + src)
+        src_out = self.layer_norms[1](self.ffn(src_att) + src_att)
 
         return src_out
 
@@ -188,23 +202,26 @@ class EncoderLayer(nn.Module):
 class DecoderLayer(nn.Module):
     """Implement decoder sub-layers."""
 
-    def __init__(self, model_dim, hidden_dim, nheads):
+    def __init__(self, model_dim, hidden_dim, nheads, p=0.1):
         super().__init__()
         self.mhatt_masked = MultiHeadAttention(
-            model_dim, nheads, mask='triu',
+            model_dim, nheads, p, mask='triu',
         )
-        self.mhatt = MultiHeadAttention(model_dim, nheads)
+        self.mhatt = MultiHeadAttention(model_dim, nheads, p)
 
         self.ffn = nn.Sequential(
             nn.Linear(model_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, model_dim)
+            nn.Linear(hidden_dim, model_dim),
+            nn.Dropout(p=p),
         )
 
+        self.layer_norms = clones(nn.LayerNorm(model_dim), 3)
+
     def forward(self, tgt, enc):
-        tgt_att1 = self.mhatt_masked(tgt, tgt, tgt)+tgt
-        tgt_att2 = self.mhatt(tgt_att1, enc, enc)+tgt_att1
-        tgt_out = self.ffn(tgt_att2)+tgt_att2
+        tgt_att1 = self.layer_norms[0](self.mhatt_masked(tgt, tgt, tgt) + tgt)
+        tgt_att2 = self.layer_norms[1](self.mhatt(tgt_att1, enc, enc) + tgt_att1)
+        tgt_out = self.layer_norms[2](self.ffn(tgt_att2) + tgt_att2)
 
         return tgt_out, enc
 
@@ -227,18 +244,19 @@ class Transformer(nn.Module):
             model_dim,
             hidden_dim,
             nheads,
+            depth,
+            p=0.1,
             max_len=5000,
-            depth=5
     ):
         super().__init__()
         self.embedding = Embedding(vocab_size, model_dim)
-        self.pos_enc = PositionalEncoder(model_dim, max_len)
+        self.pos_enc = PositionalEncoder(model_dim, max_len, p)
 
         self.encoder = seq_clones(
-            EncoderLayer(model_dim, hidden_dim, nheads), depth
+            EncoderLayer(model_dim, hidden_dim, nheads, p), depth,
         )
         self.decoder = seq_clones(
-            DecoderLayer(model_dim, hidden_dim, nheads), depth
+            DecoderLayer(model_dim, hidden_dim, nheads, p), depth,
         )
 
         self.apply(self._init_weights)
@@ -247,8 +265,11 @@ class Transformer(nn.Module):
         self.tgt_embedding = None
 
     def forward(self, src, tgt):
+        right_shift = torch.zeros((tgt.shape[0], 1), dtype=torch.long, device=device)
+        tgt_rs = torch.cat([right_shift, tgt], dim=1)[:, :-1]
+
         self.src_embedding = self.embedding(src)
-        self.tgt_embedding = self.embedding(tgt)
+        self.tgt_embedding = self.embedding(tgt_rs)
 
         src_pe = self.pos_enc(self.src_embedding)
         tgt_pe = self.pos_enc(self.tgt_embedding)
