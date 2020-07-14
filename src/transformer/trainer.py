@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchtext.data import bleu_score
+from torchtext.data.metrics import bleu_score
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -118,20 +118,22 @@ class Trainer:
 
     def _get_bleu_score(self, outputs, batch_tgt):
         decoded = list(map(self._decode_single, outputs, batch_tgt))
-        candidates, references = zip(*decoded)
+        candidates, references = list(map(list, zip(*decoded)))
+
         bleu = sum(map(bleu_score, candidates, references))
 
-        return bleu
+        return bleu/batch_tgt.shape[0]
 
     def _decode_single(self, output, tgt):
         candidate_corpus = self.train_dataset.tokenizer.decode(
             torch.argmax(output, dim=-1).cpu().detach().numpy()
         ).split()
+
         references_corpus = self.train_dataset.tokenizer.decode(
             tgt.cpu().detach().numpy()
-        ).split()
+        ).split(' ')
 
-        return candidate_corpus, references_corpus
+        return [candidate_corpus], [[references_corpus]]
 
     def save_model(self):
         pass
