@@ -90,12 +90,16 @@ class Trainer:
             self.model.eval()
 
             for batch_src, batch_tgt in tqdm(self.eval_dataloader):
-                batch_dummy = torch.zeros(batch_tgt.shape+(self.vocab_size,))
-                outputs = self._predict_loop(batch_src.to(device), batch_dummy.to(device))
+                batch_src = batch_src.to(device)
+                batch_tgt = batch_src.to(device)
+                batch_dummy = torch.zeros(
+                    batch_tgt.shape+(self.vocab_size,)
+                ).to(device)
+                outputs = self._predict_loop(batch_src, batch_dummy)
 
                 valid_loss += self.loss_fn(
-                    outputs.reshape(-1, self.vocab_size),
-                    batch_tgt.reshape(-1)
+                    outputs.reshape(-1, self.vocab_size).to(device),
+                    batch_tgt.reshape(-1).to(device)
                 )
 
         num_batches = (len(self.eval_dataset)//self.flags.batch_size)
