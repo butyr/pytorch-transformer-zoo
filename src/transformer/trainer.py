@@ -60,9 +60,6 @@ class Trainer:
                     valid_loss = self.evaluate()
                     self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
 
-                    self.save_model()
-                    self.load_model()
-
     def predict(self, inputs):
         with torch.no_grad():
             self.model.eval()
@@ -101,10 +98,10 @@ class Trainer:
         pass
 
     def save_model(self):
-        torch.save(self.model.state_dict(), self.save_path)
+        pass
 
     def load_model(self):
-        self.model.load_state_dict(torch.load(self.save_path))
+        pass
 
     def _get_dataloader(self, train=False):
 
