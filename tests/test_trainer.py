@@ -7,14 +7,15 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 class TestTrainer(unittest.TestCase):
-
-    def test_progressbar(self):
+  
+    def setUp(self):
         flags = Config(
             nheads=2,
             model_dim=10,
             hidden_dim=10,
             depth=2,
             epochs=1,
+            batch_size=64,
         )
 
         train_dataset = TextDataset(
@@ -42,12 +43,19 @@ class TestTrainer(unittest.TestCase):
             depth=flags.depth,
         )
 
-        train_op = Trainer(
+        self.train_op = Trainer(
             flags=flags,
             model=model,
             train_dataset=train_dataset,
             eval_dataset=eval_dataset,
-            tb_writer=SummaryWriter(),
+            tb_writer=None,
             vocab_size=vocab_size,
         )
-        train_op.fit()
+        self.tokenizer = self.train_op.train_dataset.tokenizer
+
+    def test_bleu_score(self):
+        batch_src, batch_tgt = next(iter(self.train_op.train_dataloader))
+
+        outputs = self.train_op.model(batch_src, batch_tgt)
+        self.train_op._get_bleu_score(outputs, batch_tgt)
+        

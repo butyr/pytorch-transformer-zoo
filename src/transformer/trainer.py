@@ -62,12 +62,20 @@ class Trainer:
                 self.optimizer.step()
 
                 t = (epoch * len(batch)) + batch_idx
-                self.tb_writer.add_scalar('Train/loss', loss, t)
-                self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
+
+                if self.tb_writer is not None:
+                    self.tb_writer.add_scalar('Train/loss', loss, t)
+                    self.tb_writer.add_scalar(
+                        'Train/bleu', self._get_bleu_score(outputs, batch_tgt), t
+                    )
+                    self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
-                    valid_loss = self.evaluate()
-                    self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
+                    valid_loss, bleu = self.evaluate()
+
+                    if self.tb_writer is not None:
+                        self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
+                        self.tb_writer.add_scalar('Train/bleu', bleu, t)
 
     def predict(self, inputs):
         with torch.no_grad():
@@ -108,7 +116,21 @@ class Trainer:
         return batch_dummy
 
     def _get_bleu_score(self, outputs, batch_tgt):
-        pass
+        decoded = list(map(self._decode_single, outputs, batch_tgt))
+        candidates, references = zip(*decoded)
+        bleu = sum(map(bleu_score, candidates, references))
+
+        return bleu
+
+    def _decode_single(self, output, tgt):
+        candidate_corpus = self.train_dataset.tokenizer.decode(
+            torch.argmax(output, dim=-1).detach().numpy()
+        ).split()
+        references_corpus = self.train_dataset.tokenizer.decode(
+            tgt.detach().numpy()
+        ).split()
+
+        return candidate_corpus, references_corpus
 
     def save_model(self):
         pass
