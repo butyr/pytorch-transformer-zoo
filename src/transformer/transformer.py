@@ -8,8 +8,6 @@ import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
 
-#torch.set_default_tensor_type('torch.cuda.FloatTensor')
-
 
 class MultiSequential(nn.Sequential):
     """Sequential model with as many inputs as outputs."""
