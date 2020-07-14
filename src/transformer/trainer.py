@@ -109,7 +109,7 @@ class Trainer:
         for _ in range(batch_dummy.shape[1]):
             batch_dummy = self.model(
                 batch_src,
-                torch.argmax(batch_dummy, dim=-1)
+                torch.argmax(batch_dummy, dim=2)
             )
 
         return batch_dummy
