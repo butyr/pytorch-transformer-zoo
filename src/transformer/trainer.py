@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-torch.set_default_tensor_type('torch.cuda.FloatTensor')
-
 
 class Trainer:
 
