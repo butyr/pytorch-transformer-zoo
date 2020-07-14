@@ -74,7 +74,7 @@ class Trainer:
             self.model.eval()
 
             for batch_src, batch_tgt in self.eval_dataloader:
-                batch_dummy = torch.zeros(batch_src.shape+(self.vocab_size,))
+                batch_dummy = torch.zeros(batch_tgt.shape+(self.vocab_size,))
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
                 valid_loss += self.loss_fn(
