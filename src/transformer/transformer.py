@@ -62,6 +62,8 @@ class MultiHeadAttention(nn.Module):
 
         self.att = None
 
+        self.dropout = nn.Dropout(p=0.1)
+
     def forward(self, query, key, value):
         """Compute multi-head attention forward pass.
 
@@ -88,7 +90,7 @@ class MultiHeadAttention(nn.Module):
         )
         ret = ret.reshape(ret.shape[:2] + (self.model_dim,))
 
-        return self.linear_out(ret)
+        return self.dropout(self.linear_out(ret))
 
     def attention(self, query, key, value):
         """Compute scaled dot-product attention.
@@ -165,10 +167,12 @@ class PositionalEncoder(nn.Module):
         pos_enc = pos_enc.unsqueeze(0)
         self.register_buffer('pe', pos_enc)
 
+        self.dropout = nn.Dropout(p=0.1)
+
     def forward(self, x):
         x = x + Variable(self.pe[:, :x.size(1)],
                          requires_grad=False)
-        return x
+        return self.dropout(x)
 
 
 class EncoderLayer(nn.Module):
@@ -182,7 +186,8 @@ class EncoderLayer(nn.Module):
         self.ffn = nn.Sequential(
             nn.Linear(model_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, model_dim)
+            nn.Linear(hidden_dim, model_dim),
+            nn.Dropout(p=0.1),
         )
 
         self.layer_norms = clones(nn.LayerNorm(model_dim), 2)
@@ -207,7 +212,8 @@ class DecoderLayer(nn.Module):
         self.ffn = nn.Sequential(
             nn.Linear(model_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, model_dim)
+            nn.Linear(hidden_dim, model_dim),
+            nn.Dropout(p=0.1),
         )
 
         self.layer_norms = clones(nn.LayerNorm(model_dim), 3)
