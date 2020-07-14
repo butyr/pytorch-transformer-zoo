@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from torchtext.data.metrics import bleu_score
 
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
@@ -55,15 +54,11 @@ class Trainer:
 
                 t = (epoch * len(batch)) + batch_idx
                 self.tb_writer.add_scalar('Train/loss', loss, t)
-                self.tb_writer.add_scalar(
-                    'Train/bleu', self._get_bleu_score(outputs, batch_tgt), t
-                )
                 self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     valid_loss, bleu = self.evaluate()
                     self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
-                    self.tb_writer.add_scalar('Train/bleu', bleu, t)
 
                     self.save_model()
                     self.load_model()
@@ -105,12 +100,7 @@ class Trainer:
         return batch_dummy
 
     def _get_bleu_score(self, outputs, batch_tgt):
-        candidate_corpus = self.train_dataset.tokenizer.decode(
-            torch.argmax(outputs, dim=-1)
-        )
-        references_corpus = self.train_dataset.tokenizer.decode(batch_tgt)
-
-        return bleu_score(candidate_corpus, references_corpus)
+        pass
 
     def save_model(self):
         torch.save(self.model.state_dict(), self.save_path)
