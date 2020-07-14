@@ -1,9 +1,4 @@
-"""Implement transformer model as presented in https://arxiv.org/abs/1706.03762.
-
-TODO:
-    - add dropout
-    - add layer norms
-"""
+"""Implement transformer model as presented in https://arxiv.org/abs/1706.03762."""
 
 import copy
 from collections import OrderedDict
@@ -13,7 +8,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import numpy as np
 
-torch.set_default_tensor_type('torch.cuda.FloatTensor')
+#torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 
 class MultiSequential(nn.Sequential):
@@ -254,8 +249,11 @@ class Transformer(nn.Module):
         self.tgt_embedding = None
 
     def forward(self, src, tgt):
+        right_shift = torch.zeros((tgt.shape[0], 1), dtype=torch.long)
+        tgt_rs = torch.cat([right_shift, tgt], dim=1)[:, :-1]
+
         self.src_embedding = self.embedding(src)
-        self.tgt_embedding = self.embedding(tgt)
+        self.tgt_embedding = self.embedding(tgt_rs)
 
         src_pe = self.pos_enc(self.src_embedding)
         tgt_pe = self.pos_enc(self.tgt_embedding)
