@@ -57,7 +57,7 @@ class Trainer:
                 self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
-                    valid_loss, bleu = self.evaluate()
+                    valid_loss = self.evaluate()
                     self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
 
                     self.save_model()
@@ -72,7 +72,6 @@ class Trainer:
 
     def evaluate(self):
         valid_loss = 0
-        bleu = 0
 
         with torch.no_grad():
             self.model.eval()
@@ -85,10 +84,9 @@ class Trainer:
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
-                bleu += self._get_bleu_score(outputs, batch_tgt)
 
         num_batches = (len(self.eval_dataset)//self.flags.batch_size)
-        return valid_loss/num_batches, bleu/num_batches
+        return valid_loss/num_batches
 
     def _predict_loop(self, batch_src, batch_dummy):
         for _ in range(batch_dummy.shape[1]):
