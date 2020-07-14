@@ -64,7 +64,7 @@ class Trainer:
                 self.tb_writer.add_scalar('Train/loss', loss, t)
                 self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
 
-                sys.stdout.write("[%-60s] %d%%" % ('=' * (60 * (batch_idx + 1) / 10), (100 * (batch_idx + 1) / 10)))
+                sys.stdout.write("[%-60s] %d%%" % ('=' * (60 * (batch_idx + 1) // 10), (100 * (batch_idx + 1) // 10)))
                 sys.stdout.flush()
                 sys.stdout.write(", batch %d" % (batch_idx + 1))
                 sys.stdout.flush()
