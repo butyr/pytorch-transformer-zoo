@@ -18,7 +18,7 @@ class TextDataset(Dataset):
         self.path_src = path_root+path_src
         self.path_tgt = path_root+path_tgt
         self.len = 0
-        self.max_len = 0
+        self.max_len = 512
 
         self.tokenizer = Tokenizer(
             BPE(
