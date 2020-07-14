@@ -92,9 +92,6 @@ class TestTensorShapes(unittest.TestCase):
 
         self.assertEqual((batch_size, sent_len, model_dim), dec.shape)
 
-    def test_right_shift(self):
-        pass
-
 
 class TestEmbedding(unittest.TestCase):
 
