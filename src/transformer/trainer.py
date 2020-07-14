@@ -1,10 +1,9 @@
-import sys
-
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-
-#torch.set_default_tensor_type('torch.cuda.FloatTensor')
+from tqdm import tqdm
+import sys
+torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 
 class Trainer:
@@ -47,7 +46,7 @@ class Trainer:
         for epoch in range(self.flags.epochs):
             print("Epoch {0}/{1}".format(epoch, self.flags.epochs))
 
-            for batch_idx, batch in enumerate(self.train_dataloader):
+            for batch_idx, batch in enumerate(tqdm(self.train_dataloader)):
                 batch_src, batch_tgt = batch
                 self.model.train()
                 self.optimizer.zero_grad()
