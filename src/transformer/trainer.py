@@ -63,10 +63,10 @@ class Trainer:
                 self.tb_writer.add_scalar('Train/loss', loss, t)
                 self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
 
-                sys.stdout.write("[%-60s] %d%%" % ('=' * (60 * (batch_idx + 1) // 10), (100 * (batch_idx + 1) // 10)))
-                sys.stdout.flush()
-                sys.stdout.write(", batch %d" % (batch_idx + 1))
-                sys.stdout.flush()
+                #sys.stdout.write("[%-60s] %d%%" % ('=' * (60 * (batch_idx + 1) // 10), (100 * (batch_idx + 1) // 10)))
+                #sys.stdout.flush()
+                #sys.stdout.write(", batch %d" % (batch_idx + 1))
+                #sys.stdout.flush()
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     valid_loss = self.evaluate()
@@ -85,7 +85,7 @@ class Trainer:
         with torch.no_grad():
             self.model.eval()
 
-            for batch_src, batch_tgt in self.eval_dataloader:
+            for batch_src, batch_tgt in tqdm(self.eval_dataloader):
                 batch_dummy = torch.zeros(batch_tgt.shape+(self.vocab_size,))
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
