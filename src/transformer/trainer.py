@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from torchtext.data import bleu_score
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -124,10 +125,10 @@ class Trainer:
 
     def _decode_single(self, output, tgt):
         candidate_corpus = self.train_dataset.tokenizer.decode(
-            torch.argmax(output, dim=-1).detach().numpy()
+            torch.argmax(output, dim=-1).cpu().detach().numpy()
         ).split()
         references_corpus = self.train_dataset.tokenizer.decode(
-            tgt.detach().numpy()
+            tgt.cpu().detach().numpy()
         ).split()
 
         return candidate_corpus, references_corpus
