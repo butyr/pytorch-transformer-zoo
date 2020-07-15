@@ -89,12 +89,10 @@ class Trainer:
                     )
                     self.tb_writer.add_scalar('Train/learning_rate', float(self._get_lr()), t)
 
-                stat_cuda('---fit-1')
                 del outputs
                 del batch_src
                 del batch_tgt
                 torch.cuda.empty_cache()
-                stat_cuda('post del batches')
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     valid_loss, bleu = self.evaluate()
@@ -126,22 +124,16 @@ class Trainer:
                 ).to(device)
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
-                stat_cuda('---evaluate-0')
-                del batch_src
-                torch.cuda.empty_cache()
-                stat_cuda('del')
-
                 valid_loss += float(self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 ))
                 bleu += self._get_bleu_score(outputs, batch_tgt)
 
-                stat_cuda('---evaluate-1')
                 del outputs
+                del batch_src
                 del batch_tgt
                 torch.cuda.empty_cache()
-                stat_cuda('del')
 
                 if i >= self.eval_size-1:
                     break
@@ -162,22 +154,15 @@ class Trainer:
                 torch.argmax(batch_dummy, dim=2)
             )
 
-        stat_cuda('---predict loop')
-        del batch_src
-        torch.cuda.empty_cache()
-        stat_cuda('del')
-
         return batch_dummy
 
     def _get_bleu_score(self, outputs, batch_tgt):
         decoded = list(map(self._decode_single, outputs, batch_tgt))
         num_batches = batch_tgt.shape[0]
 
-        stat_cuda('---bleu score')
         del outputs
         del batch_tgt
         torch.cuda.empty_cache()
-        stat_cuda('del')
 
         candidates, references = list(map(list, zip(*decoded)))
         bleu = sum(map(bleu_score, candidates, references))
