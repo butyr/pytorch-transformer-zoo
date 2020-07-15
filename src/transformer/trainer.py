@@ -111,16 +111,12 @@ class Trainer:
                 bleu += self._get_bleu_score(outputs, batch_tgt)
 
                 if i >= self.eval_size-1:
-                    print('break')
                     break
-
-            print('post eval point')
 
         num_batches = min(
             len(self.eval_dataset)//self.flags.batch_size,
             self.eval_size
         )
-        print('post num_batches')
 
         return valid_loss/num_batches, bleu/num_batches
 
