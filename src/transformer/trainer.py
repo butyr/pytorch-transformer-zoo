@@ -7,6 +7,16 @@ from tqdm import tqdm
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def stat_cuda(msg):
+    print('--', msg)
+    print('allocated: %dM, max allocated: %dM, cached: %dM, max cached: %dM' % (
+        torch.cuda.memory_allocated() / 1024 / 1024,
+        torch.cuda.max_memory_allocated() / 1024 / 1024,
+        torch.cuda.memory_cached() / 1024 / 1024,
+        torch.cuda.max_memory_cached() / 1024 / 1024
+    ))
+
+
 class Trainer:
 
     def __init__(
@@ -72,11 +82,16 @@ class Trainer:
                 t = (epoch * len(batch)) + batch_idx
 
                 if self.tb_writer is not None:
-                    self.tb_writer.add_scalar('Train/loss', loss, t)
+                    self.tb_writer.add_scalar('Train/loss', float(loss), t)
                     self.tb_writer.add_scalar(
-                        'Train/bleu', self._get_bleu_score(outputs, batch_tgt), t
+                        'Train/bleu', float(self._get_bleu_score(outputs, batch_tgt)), t
                     )
-                    self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
+                    self.tb_writer.add_scalar('Train/learning_rate', float(self._get_lr()), t)
+
+                stat_cuda('post optimizer.step')
+                del batch_src
+                del batch_tgt
+                stat_cuda('post del batches')
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     valid_loss, bleu = self.evaluate()
@@ -113,6 +128,11 @@ class Trainer:
                     batch_tgt.reshape(-1)
                 )
                 bleu += self._get_bleu_score(outputs, batch_tgt)
+
+                stat_cuda('post eval bleu')
+                del batch_src
+                del batch_tgt
+                stat_cuda('post del batches')
 
                 if i >= self.eval_size-1:
                     break
