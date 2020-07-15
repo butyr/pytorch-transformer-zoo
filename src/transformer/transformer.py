@@ -276,6 +276,13 @@ class Transformer(nn.Module):
         self.src_embedding = self.embedding(src.data)
         self.tgt_embedding = self.embedding(tgt_rs.data)
 
+        del right_shift
+        del src
+        del tgt
+        del tgt_rs
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         src_pe = self.pos_enc(self.src_embedding)
         tgt_pe = self.pos_enc(self.tgt_embedding)
 
