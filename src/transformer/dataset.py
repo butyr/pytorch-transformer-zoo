@@ -44,11 +44,17 @@ class TextDataset(Dataset):
         src = self.tokenizer.encode(str(src_line)).ids
         tgt = self.tokenizer.encode(str(tgt_line)).ids
 
-        if len(src_line) > self.max_len:
-            self.max_len = len(src_line)
+        if len(src) > self.max_len:
+            self.max_len = len(src)
 
-        if len(tgt_line) > self.max_len:
-            self.max_len = len(tgt_line)
+        if len(tgt) > self.max_len:
+            self.max_len = len(tgt)
+
+        if len(src) == 0:
+            print(src)
+
+        if len(tgt) == 0:
+            print(tgt)
 
         return torch.tensor(src), torch.tensor(tgt)
 
