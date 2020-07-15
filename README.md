@@ -33,7 +33,7 @@ outputs = model(src_batch, tgt_batch)
 # outputs without teacher forcing
 dummy_batch = torch.zeros((batch_size, tgt_sentence_length, vocab_size))
 
-for _ in range(dummy_batch.shape[1]):
+for _ in range(tgt_sentence_length):
     dummy_batch = model(
         src_batch,
         torch.argmax(dummy_batch, dim=2)
