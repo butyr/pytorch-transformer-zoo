@@ -117,7 +117,8 @@ class Trainer:
         return valid_loss/num_batches
 
     def _predict_loop(self, batch_src, batch_dummy):
-        for _ in range(batch_dummy.shape[1]):
+        tgt_sentence_len = batch_dummy.shape[1]
+        for _ in range(tgt_sentence_len):
             batch_dummy = self.model(
                 batch_src,
                 torch.argmax(batch_dummy, dim=2)
