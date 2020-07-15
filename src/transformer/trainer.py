@@ -124,10 +124,10 @@ class Trainer:
                 ).to(device)
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
-                valid_loss += self.loss_fn(
+                valid_loss += float(self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
-                )
+                ))
                 bleu += self._get_bleu_score(outputs, batch_tgt)
 
                 stat_cuda('post eval bleu')
@@ -159,11 +159,18 @@ class Trainer:
 
     def _get_bleu_score(self, outputs, batch_tgt):
         decoded = list(map(self._decode_single, outputs, batch_tgt))
-        candidates, references = list(map(list, zip(*decoded)))
+        num_batches = batch_tgt.shape[0]
 
+        stat_cuda('post bleu calc')
+        del outputs
+        del batch_tgt
+        torch.cuda.empty_cache()
+        stat_cuda('post del batches')
+
+        candidates, references = list(map(list, zip(*decoded)))
         bleu = sum(map(bleu_score, candidates, references))
 
-        return bleu/batch_tgt.shape[0]
+        return bleu/num_batches
 
     def _decode_single(self, output, tgt):
         candidate_corpus = self.train_dataset.tokenizer.decode(
@@ -173,6 +180,12 @@ class Trainer:
         references_corpus = self.train_dataset.tokenizer.decode(
             tgt.cpu().detach().numpy()
         ).split(' ')
+
+        stat_cuda('decode single')
+        del output
+        del tgt
+        torch.cuda.empty_cache()
+        stat_cuda('post del batches')
 
         return [candidate_corpus], [[references_corpus]]
 
