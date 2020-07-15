@@ -54,6 +54,13 @@ class Trainer:
             print("Epoch {0}/{1}".format(epoch, self.flags.epochs))
 
             for batch_idx, batch in enumerate(tqdm(self.train_dataloader)):
+                if batch_idx % self.flags.eval_rate == 0:
+                    valid_loss, bleu = self.evaluate()
+
+                    if self.tb_writer is not None:
+                        self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
+                        self.tb_writer.add_scalar('Valid/bleu', bleu, t)
+
                 batch_src, batch_tgt = batch
                 batch_src = batch_src.to(device)
                 batch_tgt = batch_tgt.to(device)
@@ -77,13 +84,6 @@ class Trainer:
                         'Train/bleu', self._get_bleu_score(outputs, batch_tgt), t
                     )
                     self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
-
-                if (batch_idx + 1) % self.flags.eval_rate == 0:
-                    valid_loss, bleu = self.evaluate()
-
-                    if self.tb_writer is not None:
-                        self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
-                        self.tb_writer.add_scalar('Valid/bleu', bleu, t)
 
     def predict(self, inputs):
         with torch.no_grad():
