@@ -110,7 +110,10 @@ class Trainer:
                 if i >= self.eval_size:
                     break
 
-        num_batches = (len(self.eval_dataset)//self.flags.batch_size)
+        num_batches = min(
+            len(self.eval_dataset)//self.flags.batch_size,
+            self.eval_size
+        )
         return valid_loss/num_batches
 
     def _predict_loop(self, batch_src, batch_dummy):
