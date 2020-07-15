@@ -85,9 +85,9 @@ class Trainer:
                 if self.tb_writer is not None:
                     self.tb_writer.add_scalar('Train/loss', float(loss), t)
                     self.tb_writer.add_scalar(
-                        'Train/bleu', float(self._get_bleu_score(outputs, batch_tgt)), t
+                        'Train/bleu', self._get_bleu_score(outputs, batch_tgt), t
                     )
-                    self.tb_writer.add_scalar('Train/learning_rate', float(self._get_lr()), t)
+                    self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
 
                 del outputs
                 del batch_src
