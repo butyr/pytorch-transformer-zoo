@@ -13,7 +13,7 @@ pip install git+https://github.com/butyr/pytorch-transformer.git
 
 ```python
 from transformer.transformer import Transformer
-
+import torch
 
 model = Transformer(
         vocab_size=25_000,
@@ -29,6 +29,16 @@ tgt_batch = # Tensor with shape (batch_size, tgt_sentence_length)
 
 # outputs with teacher forcing
 outputs = model(src_batch, tgt_batch)
+
+# outputs without teacher forcing
+dummy_batch = torch.zeros((batch_size, tgt_sentence_length, vocab_size))
+
+for _ in range(dummy_batch.shape[1]):
+    dummy_batch = model(
+        src_batch,
+        torch.argmax(dummy_batch, dim=2)
+    )
+outputs = dummy_batch
 
 ```
 
