@@ -108,7 +108,8 @@ class Trainer:
                     batch_tgt.reshape(-1)
                 )
 
-                if i >= self.eval_size:
+                if i >= self.eval_size-1:
+                    print('break')
                     break
 
             print('post eval point')
