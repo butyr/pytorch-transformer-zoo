@@ -59,7 +59,8 @@ def main():
         hidden_dim=2048,
         depth=6,
         epochs=10,
-        batch_size=32,
+        train_batch_size=32,
+        eval_batch_size=32,
     )
     
     torch.manual_seed(flags.random_seed)
