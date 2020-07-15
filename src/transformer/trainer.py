@@ -90,6 +90,7 @@ class Trainer:
 
     def evaluate(self):
         valid_loss = 0
+        bleu = 0
 
         with torch.no_grad():
             self.model.eval()
@@ -107,6 +108,7 @@ class Trainer:
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
+                bleu += self._get_bleu_score(outputs, batch_tgt)
 
                 if i >= self.eval_size-1:
                     print('break')
@@ -120,7 +122,7 @@ class Trainer:
         )
         print('post num_batches')
 
-        return valid_loss/num_batches
+        return valid_loss/num_batches, bleu/num_batches
 
     def _predict_loop(self, batch_src, batch_dummy):
         tgt_sentence_len = batch_dummy.shape[1]
