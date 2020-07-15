@@ -77,11 +77,6 @@ class Trainer:
                     batch_tgt.reshape(-1)
                 )
 
-                stat_cuda('---fit-0')
-                del outputs
-                torch.cuda.empty_cache()
-                stat_cuda('del')
-
                 loss.backward()
                 self.optimizer.step()
 
@@ -95,6 +90,7 @@ class Trainer:
                     self.tb_writer.add_scalar('Train/learning_rate', float(self._get_lr()), t)
 
                 stat_cuda('---fit-1')
+                del outputs
                 del batch_src
                 del batch_tgt
                 torch.cuda.empty_cache()
