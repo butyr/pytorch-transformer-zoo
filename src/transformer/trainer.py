@@ -91,6 +91,7 @@ class Trainer:
                 stat_cuda('post optimizer.step')
                 del batch_src
                 del batch_tgt
+                torch.cuda.empty_cache()
                 stat_cuda('post del batches')
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
@@ -132,6 +133,7 @@ class Trainer:
                 stat_cuda('post eval bleu')
                 del batch_src
                 del batch_tgt
+                torch.cuda.empty_cache()
                 stat_cuda('post del batches')
 
                 if i >= self.eval_size-1:
