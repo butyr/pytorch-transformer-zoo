@@ -118,6 +118,8 @@ class Trainer:
             len(self.eval_dataset)//self.flags.batch_size,
             self.eval_size
         )
+        print('post num_batches')
+
         return valid_loss/num_batches
 
     def _predict_loop(self, batch_src, batch_dummy):
