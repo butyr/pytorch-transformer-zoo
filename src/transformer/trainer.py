@@ -83,7 +83,7 @@ class Trainer:
 
                     if self.tb_writer is not None:
                         self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
-                        self.tb_writer.add_scalar('Train/bleu', bleu, t)
+                        self.tb_writer.add_scalar('Valid/bleu', bleu, t)
 
     def predict(self, inputs):
         with torch.no_grad():
