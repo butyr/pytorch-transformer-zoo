@@ -193,12 +193,6 @@ class Trainer:
             tgt.cpu().detach().numpy()
         ).split(' ')
 
-        stat_cuda('---decode single')
-        del output
-        del tgt
-        torch.cuda.empty_cache()
-        stat_cuda('del')
-
         return [candidate_corpus], [[references_corpus]]
 
     def save_model(self):
