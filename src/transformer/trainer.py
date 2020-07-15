@@ -17,15 +17,17 @@ class Trainer:
             tb_writer,
             vocab_size,
             save_path=None,
+            eval_size=1_000,
     ):
         self.flags = flags
         self.model = model.to(device)
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
-        self.train_dataloader = self._get_dataloader(train=True)
-        self.eval_dataloader = self._get_dataloader()
+        self.train_dataloader = self._get_dataloader(self.train_dataset)
+        self.eval_dataloader = self._get_dataloader(self.eval_dataset)
         self.tb_writer = tb_writer
         self.vocab_size = vocab_size
+        self.eval_size = eval_size
         self.save_path = save_path if save_path is not None else '../checkpoints/model.ckp'
 
         self.optimizer = self._get_optimizer()
@@ -91,7 +93,8 @@ class Trainer:
         with torch.no_grad():
             self.model.eval()
 
-            for batch_src, batch_tgt in self.eval_dataloader:
+            for i, batch in enumerate(self.eval_dataloader):
+                batch_src, batch_tgt = batch
                 batch_src = batch_src.to(device)
                 batch_tgt = batch_src.to(device)
                 batch_dummy = torch.zeros(
@@ -103,6 +106,9 @@ class Trainer:
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
+
+                if i >= self.eval_size:
+                    break
 
         num_batches = (len(self.eval_dataset)//self.flags.batch_size)
         return valid_loss/num_batches
@@ -141,23 +147,14 @@ class Trainer:
     def load_model(self):
         pass
 
-    def _get_dataloader(self, train=False):
-
-        if train:
-            return DataLoader(
-                self.train_dataset,
-                batch_size=self.flags.batch_size,
-                shuffle=self.flags.train_shuffle,
-                num_workers=self.flags.num_workers,
-                collate_fn=self.train_dataset.pad_collate,
-            )
-        else:
-            return DataLoader(
-                self.eval_dataset,
-                batch_size=self.flags.batch_size,
-                num_workers=self.flags.num_workers,
-                collate_fn=self.eval_dataset.pad_collate,
-            )
+    def _get_dataloader(self, dataset):
+        return DataLoader(
+            dataset,
+            batch_size=self.flags.batch_size,
+            shuffle=self.flags.train_shuffle,
+            num_workers=self.flags.num_workers,
+            collate_fn=self.train_dataset.pad_collate,
+        )
 
     def _get_lr(self):
         for param_group in self.optimizer.param_groups:
