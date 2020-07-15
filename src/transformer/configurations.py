@@ -11,7 +11,8 @@ class Config:
             max_len=5_000,
             epochs=10,
             eval_rate=1_000,
-            batch_size=64,
+            train_batch_size=64,
+            eval_batch_size=128,
             lr=3e-4,
             train_shuffle=True,
             num_workers=0,
@@ -26,7 +27,8 @@ class Config:
         self.max_len = max_len
         self.epochs = epochs
         self.eval_rate = eval_rate
-        self.batch_size = batch_size
+        self.train_batch_size = train_batch_size
+        self.eval_batch_size = eval_batch_size
         self.lr = lr
         self.train_shuffle = train_shuffle
         self.num_workers = num_workers

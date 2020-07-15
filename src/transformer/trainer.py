@@ -24,8 +24,12 @@ class Trainer:
         self.model = model.to(device)
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
-        self.train_dataloader = self._get_dataloader(self.train_dataset)
-        self.eval_dataloader = self._get_dataloader(self.eval_dataset)
+        self.train_dataloader = self._get_dataloader(
+            self.train_dataset, self.flags.train_batch_size
+        )
+        self.eval_dataloader = self._get_dataloader(
+            self.eval_dataset, self.flags.eval_batch_size
+        )
         self.tb_writer = tb_writer
         self.vocab_size = vocab_size
         self.eval_size = eval_size
@@ -114,7 +118,7 @@ class Trainer:
                     break
 
         num_batches = min(
-            len(self.eval_dataset)//self.flags.batch_size,
+            len(self.eval_dataset)//self.flags.eval_batch_size,
             self.eval_size
         )
 
@@ -156,10 +160,10 @@ class Trainer:
     def load_model(self):
         pass
 
-    def _get_dataloader(self, dataset):
+    def _get_dataloader(self, dataset, batch_size):
         return DataLoader(
             dataset,
-            batch_size=self.flags.batch_size,
+            batch_size=batch_size,
             shuffle=self.flags.train_shuffle,
             num_workers=self.flags.num_workers,
             collate_fn=self.train_dataset.pad_collate,
