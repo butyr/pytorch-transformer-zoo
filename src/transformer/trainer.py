@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchtext.data.metrics import bleu_score
+from tqdm import tqdm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -48,7 +49,7 @@ class Trainer:
         for epoch in range(self.flags.epochs):
             print("Epoch {0}/{1}".format(epoch, self.flags.epochs))
 
-            for batch_idx, batch in enumerate(self.train_dataloader):
+            for batch_idx, batch in enumerate(tqdm(self.train_dataloader)):
                 batch_src, batch_tgt = batch
                 batch_src = batch_src.to(device)
                 batch_tgt = batch_tgt.to(device)
@@ -93,7 +94,7 @@ class Trainer:
         with torch.no_grad():
             self.model.eval()
 
-            for i, batch in enumerate(self.eval_dataloader):
+            for i, batch in enumerate(tqdm(self.eval_dataloader)):
                 batch_src, batch_tgt = batch
                 batch_src = batch_src.to(device)
                 batch_tgt = batch_src.to(device)
