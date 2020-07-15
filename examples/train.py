@@ -1,3 +1,4 @@
+import torch
 from src.transformer.trainer import Trainer
 from src.transformer.configurations import Config
 from src.transformer.dataset import TextDataset
@@ -12,7 +13,11 @@ def main():
         hidden_dim=2048,
         depth=6,
         epochs=10,
+        batch_size=32,
     )
+
+    torch.manual_seed(flags.random_seed)
+    torch.cuda.manual_seed(flags.random_seed)
 
     train_dataset = TextDataset(
         path_root='../../ml-datasets/wmt14/',

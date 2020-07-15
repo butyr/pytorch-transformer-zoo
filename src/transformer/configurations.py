@@ -7,7 +7,7 @@ class Config:
             key_dim=64,
             model_dim=512,
             hidden_dim=128,
-            depth=5,
+            depth=6,
             max_len=5_000,
             epochs=10,
             eval_rate=1_000,
