@@ -266,10 +266,10 @@ class Transformer(nn.Module):
 
     def forward(self, src, tgt):
         right_shift = torch.zeros((tgt.shape[0], 1), dtype=torch.long, device=device)
-        tgt_rs = torch.cat([right_shift, tgt], dim=1)[:, :-1]
+        tgt_rs = torch.cat([right_shift.detach(), tgt.detach()], dim=1)[:, :-1]
 
-        self.src_embedding = self.embedding(src)
-        self.tgt_embedding = self.embedding(tgt_rs)
+        self.src_embedding = self.embedding(src.detach())
+        self.tgt_embedding = self.embedding(tgt_rs.detach())
 
         src_pe = self.pos_enc(self.src_embedding)
         tgt_pe = self.pos_enc(self.tgt_embedding)
