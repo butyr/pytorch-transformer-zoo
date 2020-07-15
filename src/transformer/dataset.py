@@ -50,12 +50,6 @@ class TextDataset(Dataset):
         if len(tgt) > self.max_len:
             self.max_len = len(tgt)
 
-        if len(src) == 0:
-            print(src)
-
-        if len(tgt) == 0:
-            print(tgt)
-
         return torch.tensor(src), torch.tensor(tgt)
 
     def __len__(self):

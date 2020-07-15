@@ -111,6 +111,8 @@ class Trainer:
                 if i >= self.eval_size:
                     break
 
+            print('post eval point')
+
         num_batches = min(
             len(self.eval_dataset)//self.flags.batch_size,
             self.eval_size
