@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchtext.data.metrics import bleu_score
+from tqdm import tqdm
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -23,8 +24,12 @@ class Trainer:
         self.model = model.to(device)
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
-        self.train_dataloader = self._get_dataloader(self.train_dataset)
-        self.eval_dataloader = self._get_dataloader(self.eval_dataset)
+        self.train_dataloader = self._get_dataloader(
+            self.train_dataset, self.flags.train_batch_size
+        )
+        self.eval_dataloader = self._get_dataloader(
+            self.eval_dataset, self.flags.eval_batch_size
+        )
         self.tb_writer = tb_writer
         self.vocab_size = vocab_size
         self.eval_size = eval_size
@@ -48,7 +53,7 @@ class Trainer:
         for epoch in range(self.flags.epochs):
             print("Epoch {0}/{1}".format(epoch, self.flags.epochs))
 
-            for batch_idx, batch in enumerate(self.train_dataloader):
+            for batch_idx, batch in enumerate(tqdm(self.train_dataloader)):
                 batch_src, batch_tgt = batch
                 batch_src = batch_src.to(device)
                 batch_tgt = batch_tgt.to(device)
@@ -78,7 +83,7 @@ class Trainer:
 
                     if self.tb_writer is not None:
                         self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
-                        self.tb_writer.add_scalar('Train/bleu', bleu, t)
+                        self.tb_writer.add_scalar('Valid/bleu', bleu, t)
 
     def predict(self, inputs):
         with torch.no_grad():
@@ -89,11 +94,12 @@ class Trainer:
 
     def evaluate(self):
         valid_loss = 0
+        bleu = 0
 
         with torch.no_grad():
             self.model.eval()
 
-            for i, batch in enumerate(self.eval_dataloader):
+            for i, batch in enumerate(tqdm(self.eval_dataloader)):
                 batch_src, batch_tgt = batch
                 batch_src = batch_src.to(device)
                 batch_tgt = batch_src.to(device)
@@ -106,15 +112,17 @@ class Trainer:
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
+                bleu += self._get_bleu_score(outputs, batch_tgt)
 
-                if i >= self.eval_size:
+                if i >= self.eval_size-1:
                     break
 
         num_batches = min(
-            len(self.eval_dataset)//self.flags.batch_size,
+            len(self.eval_dataset)//self.flags.eval_batch_size,
             self.eval_size
         )
-        return valid_loss/num_batches
+
+        return valid_loss/num_batches, bleu/num_batches
 
     def _predict_loop(self, batch_src, batch_dummy):
         tgt_sentence_len = batch_dummy.shape[1]
@@ -152,10 +160,10 @@ class Trainer:
     def load_model(self):
         pass
 
-    def _get_dataloader(self, dataset):
+    def _get_dataloader(self, dataset, batch_size):
         return DataLoader(
             dataset,
-            batch_size=self.flags.batch_size,
+            batch_size=batch_size,
             shuffle=self.flags.train_shuffle,
             num_workers=self.flags.num_workers,
             collate_fn=self.train_dataset.pad_collate,
