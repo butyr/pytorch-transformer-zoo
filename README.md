@@ -1,10 +1,6 @@
 # pytorch-transformer
 PyTorch implementation of transformer model based on "Attention Is All You Need" ([Vaswani et al. 2017](https://arxiv.org/pdf/1706.03762.pdf)).
 
-## Results
-Training results for the WMT14 English-German dataset.
-
-![Results](https://github.com/butyr/pytorch-transformer/blob/master/images/results_train.png)
 
 ## Installation
 
@@ -111,3 +107,8 @@ if __name__ == "__main__":
     main()
 
 ```
+
+## Results
+Training results for the WMT14 English-German dataset.
+
+![Results](https://github.com/butyr/pytorch-transformer/blob/master/images/results_train.png)
