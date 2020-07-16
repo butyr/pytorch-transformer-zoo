@@ -87,7 +87,6 @@ class Trainer:
                     self.tb_writer.add_scalar(
                         'Train/bleu', self._get_bleu_score(outputs, batch_tgt), t
                     )
-                    self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
 
                 del outputs
                 del batch_src
