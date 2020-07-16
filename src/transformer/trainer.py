@@ -180,10 +180,10 @@ class Trainer:
         return [candidate_corpus], [[references_corpus]]
 
     def save_model(self):
-        pass
+        torch.save(self.model.state_dict(), self.save_path)
 
     def load_model(self):
-        pass
+        self.model.load_state_dict(torch.load(self.save_path))
 
     def _get_dataloader(self, dataset, batch_size):
         return DataLoader(
