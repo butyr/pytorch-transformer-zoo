@@ -3,6 +3,7 @@ PyTorch implementation of transformer model based on "Attention Is All You Need"
 
 ## Results
 Results for the WMT14 dataset after 3 minutes of training.
+
 ![Results](https://github.com/butyr/pytorch-transformer/blob/master/images/results_train.png)
 
 ## Installation
