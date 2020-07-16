@@ -7,6 +7,16 @@ from tqdm import tqdm
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def stat_cuda(msg):
+    print('--', msg)
+    print('allocated: %dM, max allocated: %dM, cached: %dM, max cached: %dM' % (
+        torch.cuda.memory_allocated() / 1024 / 1024,
+        torch.cuda.max_memory_allocated() / 1024 / 1024,
+        torch.cuda.memory_cached() / 1024 / 1024,
+        torch.cuda.max_memory_cached() / 1024 / 1024
+    ))
+
+
 class Trainer:
 
     def __init__(
@@ -66,17 +76,23 @@ class Trainer:
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
                 )
+
                 loss.backward()
                 self.optimizer.step()
 
                 t = (epoch * len(batch)) + batch_idx
 
                 if self.tb_writer is not None:
-                    self.tb_writer.add_scalar('Train/loss', loss, t)
+                    self.tb_writer.add_scalar('Train/loss', float(loss), t)
                     self.tb_writer.add_scalar(
                         'Train/bleu', self._get_bleu_score(outputs, batch_tgt), t
                     )
                     self.tb_writer.add_scalar('Train/learning_rate', self._get_lr(), t)
+
+                del outputs
+                del batch_src
+                del batch_tgt
+                torch.cuda.empty_cache()
 
                 if (batch_idx + 1) % self.flags.eval_rate == 0:
                     valid_loss, bleu = self.evaluate()
@@ -108,11 +124,16 @@ class Trainer:
                 ).to(device)
                 outputs = self._predict_loop(batch_src, batch_dummy)
 
-                valid_loss += self.loss_fn(
+                valid_loss += float(self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
-                )
+                ))
                 bleu += self._get_bleu_score(outputs, batch_tgt)
+
+                del outputs
+                del batch_src
+                del batch_tgt
+                torch.cuda.empty_cache()
 
                 if i >= self.eval_size-1:
                     break
@@ -137,11 +158,16 @@ class Trainer:
 
     def _get_bleu_score(self, outputs, batch_tgt):
         decoded = list(map(self._decode_single, outputs, batch_tgt))
-        candidates, references = list(map(list, zip(*decoded)))
+        num_batches = batch_tgt.shape[0]
 
+        del outputs
+        del batch_tgt
+        torch.cuda.empty_cache()
+
+        candidates, references = list(map(list, zip(*decoded)))
         bleu = sum(map(bleu_score, candidates, references))
 
-        return bleu/batch_tgt.shape[0]
+        return bleu/num_batches
 
     def _decode_single(self, output, tgt):
         candidate_corpus = self.train_dataset.tokenizer.decode(
