@@ -2,7 +2,7 @@
 PyTorch implementation of transformer model based on "Attention Is All You Need" ([Vaswani et al. 2017](https://arxiv.org/pdf/1706.03762.pdf)).
 
 ## Results
-![Results](https://github.com/butyr/pytorch-transformer/images/results_train.png)
+![Results](https://github.com/butyr/pytorch-transformer/blob/master/images/results_train.png)
 
 ## Installation
 
