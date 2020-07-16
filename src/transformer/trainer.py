@@ -87,6 +87,7 @@ class Trainer:
                     self.tb_writer.add_scalar(
                         'Train/bleu', self._get_bleu_score(outputs, batch_tgt), t
                     )
+                    self.tb_writer.add_scalar('Train/perplexity', float(torch.exp(loss)), t)
 
                 del outputs
                 del batch_src
@@ -99,6 +100,9 @@ class Trainer:
                     if self.tb_writer is not None:
                         self.tb_writer.add_scalar('Valid/loss', valid_loss, t)
                         self.tb_writer.add_scalar('Valid/bleu', bleu, t)
+                        self.tb_writer.add_scalar(
+                            'Valid/perplexity', float(torch.exp(valid_loss)), t
+                        )
 
     def predict(self, inputs):
         with torch.no_grad():
