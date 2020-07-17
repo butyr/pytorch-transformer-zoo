@@ -15,7 +15,7 @@ class TestTrainer(unittest.TestCase):
             hidden_dim=10,
             depth=2,
             epochs=1,
-            batch_size=64,
+            train_batch_size=64,
         )
 
         train_dataset = TextDataset(
