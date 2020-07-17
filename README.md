@@ -107,8 +107,3 @@ if __name__ == "__main__":
     main()
 
 ```
-
-## Results
-Training results for the WMT14 English-German dataset.
-
-![Results](https://github.com/butyr/pytorch-transformer/blob/master/images/results_train.png)
