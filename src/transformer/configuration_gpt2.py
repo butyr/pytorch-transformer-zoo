@@ -3,12 +3,11 @@ class Config:
     def __init__(
             self,
             random_seed=1234,
-            nheads=8,
-            key_dim=64,
-            model_dim=512,
-            hidden_dim=128,
-            depth=6,
-            max_len=5_000,
+            nheads=12,
+            model_dim=768,
+            hidden_dim=3072,
+            depth=12,
+            max_len=512,
             epochs=10,
             eval_rate=1_000,
             train_batch_size=32,
@@ -20,7 +19,6 @@ class Config:
 
         self.random_seed = random_seed
         self.nheads = nheads
-        self.key_dim = key_dim
         self.model_dim = model_dim
         self.hidden_dim = hidden_dim
         self.depth = depth
