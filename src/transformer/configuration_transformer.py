@@ -1,4 +1,4 @@
-class Config:
+class TransformerConfig:
 
     def __init__(
             self,

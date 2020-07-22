@@ -1,13 +1,13 @@
 import torch
-from src.transformer.trainer import Trainer
-from src.transformer.configuration_transformer import Config
+from src.transformer import Trainer
+from src.transformer import TransformerConfig
 from src.transformer.dataset import TextDataset
-from src.transformer.modeling_transformer import Transformer
+from src.transformer import Transformer
 from torch.utils.tensorboard import SummaryWriter
 
 
 def main():
-    flags = Config(
+    flags = TransformerConfig(
         nheads=8,
         model_dim=512,
         hidden_dim=2048,

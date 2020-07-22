@@ -1,4 +1,4 @@
-class Config:
+class GTP2Config:
 
     def __init__(
             self,

@@ -51,15 +51,15 @@ outputs = dummy_batch
 ## Example
 ```python
 import torch
-from transformer.trainer import Trainer
-from transformer.configurations import Config
+from transformer import Trainer
+from transformer import TransformerConfig
 from transformer.dataset import TextDataset
-from transformer.transformer import Transformer
+from transformer import Transformer
 from torch.utils.tensorboard import SummaryWriter
 
 
 def main():
-    flags = Config(
+    flags = TransformerConfig(
         nheads=8,
         model_dim=512,
         hidden_dim=2048,
@@ -68,7 +68,7 @@ def main():
         train_batch_size=32,
         eval_batch_size=32,
     )
-    
+
     torch.manual_seed(flags.random_seed)
     torch.cuda.manual_seed(flags.random_seed)
 
@@ -110,5 +110,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 ```
