@@ -1,7 +1,7 @@
 """Test GPT-2 model."""
 
 import unittest
-from src.transformer.gpt2 import *
+from src.transformer.modeling_gpt2 import *
 
 d_key = 4
 nheads = 2

@@ -1,7 +1,7 @@
 """Test transformer model."""
 
 import unittest
-from src.transformer.transformer import *
+from src.transformer.modeling_transformer import *
 
 d_key = 4
 nheads = 2

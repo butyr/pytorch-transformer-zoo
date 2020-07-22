@@ -3,7 +3,7 @@ import torch
 from src.transformer.trainer import Trainer
 from src.transformer.configuration_transformer import Config
 from src.transformer.dataset import TextDataset
-from src.transformer.transformer import Transformer
+from src.transformer.modeling_transformer import Transformer
 
 
 class TestTrainer(unittest.TestCase):
