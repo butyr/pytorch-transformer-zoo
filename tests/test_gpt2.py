@@ -1,7 +1,7 @@
-"""Test transformer model."""
+"""Test GPT-2 model."""
 
 import unittest
-from src.transformer.modeling_transformer import *
+from src.transformer.modeling_gpt2 import *
 
 d_key = 4
 nheads = 2
@@ -46,7 +46,7 @@ class TestTensorShapes(unittest.TestCase):
         self.assertEqual((batch_size, sent_len, model_dim), ret.shape)
 
     def test_transformer(self):
-        model = Transformer(
+        model = GPT2(
             vocab_size,
             model_dim,
             hidden_dim,
@@ -59,14 +59,11 @@ class TestTensorShapes(unittest.TestCase):
         x = torch.ones(
             (batch_size, sent_len), dtype=torch.long
         )
-        y = torch.ones(
-            (batch_size, sent_len//2), dtype=torch.long
-        )
 
-        ret = model(x, y)
+        ret = model(x)
 
         self.assertEqual(
-            (batch_size, sent_len//2, vocab_size), ret.shape
+            (batch_size, sent_len, vocab_size), ret.shape
         )
 
     def test_pe(self):
@@ -77,20 +74,11 @@ class TestTensorShapes(unittest.TestCase):
 
         self.assertEqual((batch_size, sent_len, model_dim), ret.shape)
 
-    def test_encoder_layer(self):
-        A = torch.ones((batch_size, sent_len, model_dim))
-        encoder = EncoderLayer(model_dim, hidden_dim, nheads)
-
-        enc = encoder(A)
-
-        self.assertEqual((batch_size, sent_len, model_dim), enc.shape)
-
     def test_decoder_layer(self):
         A = torch.ones((batch_size, sent_len, model_dim))
-        B = torch.ones((batch_size, sent_len//2, model_dim))
         decoder = DecoderLayer(model_dim, hidden_dim, nheads)
 
-        dec, _ = decoder(A, B)
+        dec = decoder(A)
 
         self.assertEqual((batch_size, sent_len, model_dim), dec.shape)
 
@@ -120,28 +108,6 @@ class TestEmbedding(unittest.TestCase):
         self.weights_in = copy.deepcopy(self.model.encoder.weight)
         self.weights_out = copy.deepcopy(self.model.decoder.weight)
 
-    def test_encoder_tie_weights(self):
-        self.optimizer.zero_grad()
-        output_a = self.model(self.input_a)
-        loss = torch.sum(output_a-self.target_a)
-
-        loss.backward()
-        self.optimizer.step()
-
-        self.assertNotEqual(
-            torch.sum(self.weights_in),
-            torch.sum(self.model.encoder.weight)
-        )
-        self.assertNotEqual(
-            torch.sum(self.weights_out),
-            torch.sum(self.model.decoder.weight)
-        )
-        self.assertEqual(
-            torch.sum(self.model.encoder.weight),
-            torch.sum(self.model.decoder.weight)
-        )
-        self.assertEqual(self.encoder_shape, output_a.shape)
-
     def test_decoder_tie_weights(self):
         self.optimizer.zero_grad()
         output_b = self.model(self.input_b, inverse=True)
@@ -170,7 +136,7 @@ class TestSanityChecks(unittest.TestCase):
     def test_init_loss(self):
         """Compares loss@init with theoretical loss."""
 
-        model = Transformer(
+        model = GPT2(
             vocab_size,
             model_dim,
             hidden_dim,
@@ -188,7 +154,7 @@ class TestSanityChecks(unittest.TestCase):
             batch_size, dtype=torch.long
         ).repeat(sent_len).reshape(batch_size, sent_len)
 
-        outputs = F.softmax(model(inputs, targets), dim=-1)
+        outputs = F.softmax(model(inputs), dim=-1)
         loss_fn = nn.CrossEntropyLoss()
         loss = loss_fn(
             outputs.reshape(-1, vocab_size),
@@ -205,7 +171,7 @@ class TestGradientFlows(unittest.TestCase):
     def test_one_step_grad(self):
         """Tests whether all parameters are updated."""
 
-        model = Transformer(
+        model = GPT2(
             vocab_size,
             model_dim,
             hidden_dim,
@@ -218,9 +184,6 @@ class TestGradientFlows(unittest.TestCase):
         inputs = torch.ones(
             (batch_size, sent_len), dtype=torch.long
         )
-        targets = torch.zeros(
-            (batch_size, sent_len // 2), dtype=torch.long
-        )
 
         optimizer = torch.optim.SGD(
             model.parameters(), lr=100.0, momentum=0.9
@@ -228,7 +191,7 @@ class TestGradientFlows(unittest.TestCase):
         model_t0 = copy.deepcopy(model)
 
         optimizer.zero_grad()
-        outputs = model(inputs, targets)
+        outputs = model(inputs)
         targets = torch.argmax(
             (outputs*(-1)).reshape(-1, vocab_size), dim=-1
         )
@@ -254,7 +217,7 @@ class TestGradientFlows(unittest.TestCase):
     def test_batch_dim(self):
         """Tests consistency of batch dimension."""
 
-        model = Transformer(
+        model = GPT2(
             vocab_size,
             model_dim,
             hidden_dim,
@@ -268,16 +231,12 @@ class TestGradientFlows(unittest.TestCase):
             (batch_size, sent_len), dtype=torch.long
         )
 
-        targets = torch.ones(
-            (batch_size, sent_len), dtype=torch.long
-        )
-
-        outputs = model(inputs, targets)
+        outputs = model(inputs)
 
         for i in range(batch_size):
             loss = outputs[i, :, :].sum()
             grad = torch.autograd.grad(
-                loss, model.src_embedding, retain_graph=True
+                loss, model.inputs_embedding, retain_graph=True
             )[0]
 
             self.assertNotEqual(0.0, loss)
@@ -298,7 +257,7 @@ class TestGradientFlows(unittest.TestCase):
     def test_mask(self):
         """Tests masking of decoder inputs."""
 
-        model = Transformer(
+        model = GPT2(
             vocab_size,
             model_dim,
             hidden_dim,
@@ -312,16 +271,12 @@ class TestGradientFlows(unittest.TestCase):
             (batch_size, sent_len), dtype=torch.long
         )
 
-        targets = torch.ones(
-            (batch_size, sent_len), dtype=torch.long
-        )
-
-        outputs = model(inputs, targets)
+        outputs = model(inputs)
 
         for i in range(sent_len):
             loss = outputs[:, i, :].sum()
             grad = torch.autograd.grad(
-                loss, model.tgt_embedding, retain_graph=True
+                loss, model.inputs_embedding, retain_graph=True
             )[0]
 
             self.assertEqual(
