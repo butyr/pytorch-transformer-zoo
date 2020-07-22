@@ -1,6 +1,6 @@
 import torch
 from src.transformer.trainer import Trainer
-from src.transformer.configurations import Config
+from src.transformer.configuration_transformer import Config
 from src.transformer.dataset import TextDataset
 from src.transformer.transformer import Transformer
 from torch.utils.tensorboard import SummaryWriter
