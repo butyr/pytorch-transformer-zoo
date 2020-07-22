@@ -1,6 +1,6 @@
 # pytorch-transformer
 
-This project aims at reimplementing all the main variations of the transformer model in PyTorch. 
+This repository aims at providing all the main variations of the transformer model in PyTorch. 
 Currently it includes the initial model based on "Attention Is All You Need" 
 ([Vaswani et al. 2017](https://arxiv.org/pdf/1706.03762.pdf)) and the OpenAI GPT2 model based on 
 [Radford et al. 2018](https://s3-us-west-2.amazonaws.com/openai-assets/research-covers/language-unsupervised/language_understanding_paper.pdf) 
