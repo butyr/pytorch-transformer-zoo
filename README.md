@@ -53,7 +53,7 @@ outputs = dummy_batch
 import torch
 from transformer import Trainer
 from transformer import TransformerConfig
-from transformer.dataset import TextDataset
+from transformer import TextDataset
 from transformer import Transformer
 from torch.utils.tensorboard import SummaryWriter
 

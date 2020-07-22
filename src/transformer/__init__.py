@@ -6,6 +6,9 @@ from .modeling_gpt2 import GPT2
 from .configuration_transformer import TransformerConfig
 from .configuration_gpt2 import GTP2Config
 
+# dataset
+from .dataset import TextDataset
+
 # trainer
 from .trainer import Trainer
 
