@@ -1,4 +1,4 @@
-# pytorch-transformer
+# pytorch-transformer-zoo
 
 This repository aims at providing all the main variations of the transformer model in PyTorch. 
 Currently it includes the initial model based on "Attention Is All You Need" 
