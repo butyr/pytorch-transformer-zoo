@@ -18,7 +18,7 @@ pip install git+https://github.com/butyr/pytorch-transformer.git
 ## Usage
 
 ```python
-from transformer.transformer import Transformer
+from transformer import Transformer
 import torch
 
 model = Transformer(
