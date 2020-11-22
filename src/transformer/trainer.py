@@ -125,10 +125,10 @@ class Trainer:
 
                 outputs = self.model(batch_src, batch_tgt)
 
-                valid_loss += float(self.loss_fn(
+                valid_loss += self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
-                ))
+                )
                 bleu += self._get_bleu_score(outputs, batch_tgt)
 
                 del outputs
