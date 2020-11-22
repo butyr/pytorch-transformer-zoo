@@ -136,9 +136,6 @@ class Trainer:
                 del batch_tgt
                 torch.cuda.empty_cache()
 
-                if i >= self.eval_size-1:
-                    break
-
         num_batches = min(
             len(self.eval_dataset)//self.flags.eval_batch_size,
             self.eval_size
