@@ -122,10 +122,8 @@ class Trainer:
                 batch_src, batch_tgt = batch
                 batch_src = batch_src.to(device)
                 batch_tgt = batch_src.to(device)
-                batch_dummy = torch.zeros(
-                    batch_tgt.shape+(self.vocab_size,)
-                ).to(device)
-                outputs = self._predict_loop(batch_src, batch_dummy)
+
+                outputs = self.model(batch_src, batch_tgt)
 
                 valid_loss += float(self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
