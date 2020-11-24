@@ -103,8 +103,8 @@ class Trainer:
                             'Valid/perplexity', float(torch.exp(valid_loss)), t
                         )
 
-                    print(f'input: {batch_src[0]}')
-                    print(f'output: {self.predict(batch_src[0])} ')
+                    print(f'input: {batch_src[0:1]}')
+                    print(f'output: {self.predict(batch_src[0:1])} ')
 
     def predict(self, inputs):
         with torch.no_grad():
