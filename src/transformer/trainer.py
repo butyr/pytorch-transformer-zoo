@@ -90,7 +90,6 @@ class Trainer:
                     self.tb_writer.add_scalar('Train/perplexity', float(torch.exp(loss)), t)
 
                 del outputs
-                del batch_src
                 del batch_tgt
                 torch.cuda.empty_cache()
 
