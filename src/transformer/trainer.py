@@ -103,8 +103,11 @@ class Trainer:
                             'Valid/perplexity', float(torch.exp(valid_loss)), t
                         )
 
-                    print(f'input: {batch_src[0:1]}')
-                    print(f'output: {self.predict(batch_src[0:1])} ')
+                    print(f'input: {self.train_dataset.tokenizer.decode(batch_src[0:1].cpu().detach().numpy())}')
+                    sample_output = self.train_dataset.tokenizer.decode(
+                        torch.argmax(self.predict(batch_src[0:1]), dim=-1).cpu().detach().numpy()
+                    )
+                    print(f'output: {sample_output}')
 
     def predict(self, inputs):
         with torch.no_grad():
