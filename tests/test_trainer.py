@@ -54,7 +54,7 @@ class TestTrainer(unittest.TestCase):
         self.tokenizer = self.train_op.train_dataset.tokenizer
 
     def test_bleu_score(self):
-        batch_src, batch_tgt = next(iter(self.train_op.train_dataloader))
+        batch_src, batch_tgt, _, _ = next(iter(self.train_op.train_dataloader))
         one_hot = self.to_one_hot(batch_tgt, self.vocab_size)
         bleu = self.train_op._get_bleu_score(one_hot, batch_tgt)
 

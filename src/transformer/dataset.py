@@ -50,7 +50,7 @@ class TextDataset(Dataset):
         if len(tgt) > self.max_len:
             self.max_len = len(tgt)
 
-        return torch.tensor(src), torch.tensor(tgt)
+        return torch.tensor(src), torch.tensor(tgt), len(src), len(tgt)
 
     def __len__(self):
         return self.len
@@ -60,9 +60,9 @@ class TextDataset(Dataset):
 
     @staticmethod
     def pad_collate(batch):
-        (x, y) = zip(*batch)
+        (x, y, x_len, y_len) = zip(*batch)
 
         x_pad = pad_sequence(x, batch_first=True, padding_value=0)
         y_pad = pad_sequence(y, batch_first=True, padding_value=0)
 
-        return x_pad, y_pad, len(x), len(y)
+        return x_pad, y_pad, x_len, y_len
