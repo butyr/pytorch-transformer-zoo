@@ -65,4 +65,4 @@ class TextDataset(Dataset):
         x_pad = pad_sequence(x, batch_first=True, padding_value=0)
         y_pad = pad_sequence(y, batch_first=True, padding_value=0)
 
-        return x_pad, y_pad
+        return x_pad, y_pad, len(x), len(y)
