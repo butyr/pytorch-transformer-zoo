@@ -73,8 +73,8 @@ class Trainer:
 
                 outputs = self.model(batch_src, batch_tgt)
 
-                outputs = outputs[:, batch_len_x, :]
-                batch_tgt = batch_tgt[:, batch_len_y, :]
+                outputs = outputs[:, :batch_len_x, :]
+                batch_tgt = batch_tgt[:, :batch_len_y, :]
                 loss = self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
                     batch_tgt.reshape(-1)
