@@ -125,7 +125,7 @@ class Trainer:
             self.model.eval()
 
             for i, batch in enumerate(tqdm(self.eval_dataloader)):
-                batch_src, batch_tgt = batch
+                batch_src, batch_tgt, _, _ = batch
                 batch_src = batch_src.to(device)
                 batch_tgt = batch_src.to(device)
 
