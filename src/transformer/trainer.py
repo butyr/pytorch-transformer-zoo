@@ -71,13 +71,11 @@ class Trainer:
                 self.model.train()
                 self.optimizer.zero_grad()
 
-                outputs = self.model(batch_src, batch_tgt)
+                outputs = self.model(batch_src, batch_src)
 
-                outputs = torch.tensor([x[:y_len, :] for x, y_len in zip(outputs, batch_len_y)])
-                batch_tgt = torch.tensor([y[:y_len] for y, y_len in zip(batch_tgt, batch_len_y)])
                 loss = self.loss_fn(
                     outputs.reshape(-1, self.vocab_size),
-                    batch_tgt.reshape(-1)
+                    batch_src.reshape(-1)
                 )
 
                 loss.backward()
