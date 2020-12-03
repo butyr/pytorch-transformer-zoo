@@ -105,8 +105,13 @@ class Trainer:
                         )
 
                     print(f'input: {self.train_dataset.tokenizer.decode(batch_src[0].cpu().detach().numpy())}')
+
                     sample_output = self.train_dataset.tokenizer.decode(
                         torch.argmax(self.predict(batch_src[0:1])[0], dim=-1).cpu().detach().numpy()
+                    )
+                    print(f'output: {sample_output}')
+                    sample_output = self.train_dataset.tokenizer.decode(
+                        torch.argmax(self.model(batch_src[0:1])[0], dim=-1).cpu().detach().numpy()
                     )
                     print(f'output: {sample_output}')
 
