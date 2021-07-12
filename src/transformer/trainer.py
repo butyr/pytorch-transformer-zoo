@@ -53,7 +53,7 @@ class Trainer:
 
     @staticmethod
     def _get_loss_fn():
-        return nn.CrossEntropyLoss()
+        return nn.CrossEntropyLoss(ignore_index=0)
 
     def fit(self):
         print("Train on {0} samples, validate on {1} samples".format(
